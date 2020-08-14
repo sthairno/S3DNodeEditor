@@ -340,8 +340,7 @@ ASALocalRun/
 healthchecksdb
 
 #Siv3D
-App/
-
-#ProjectFile
-SasaGUI.sln
-SasaGUI.vcxproj*
+App/AS_DEBUG
+Intermediate
+*.exe
+*_log.html
