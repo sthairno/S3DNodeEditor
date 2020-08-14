@@ -1,4 +1,4 @@
-#include "Config.h"
+#include "Config.hpp"
 
 Image NodeEditor::detail::circleImage(const double& r, Color color, const Color& backColor)
 {

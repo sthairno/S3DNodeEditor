@@ -1,6 +1,6 @@
 #pragma once
 #include<Siv3D.hpp>
-#include"Config.h"
+#include"Config.hpp"
 
 namespace NodeEditor
 {

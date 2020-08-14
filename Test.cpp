@@ -1,8 +1,8 @@
 #include<Siv3D.hpp>
 #include<any>
 #include<typeinfo>
-#include"Input.h"
-#include"NodeEditor.h"
+#include"Input.hpp"
+#include"NodeEditor.hpp"
 
 namespace Value
 {

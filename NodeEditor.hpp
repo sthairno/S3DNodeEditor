@@ -1,10 +1,10 @@
 #pragma once
 #include<Siv3D.hpp>
 #include<regex>
-#include"Input.h"
-#include"Config.h"
-#include"INode.h"
-#include"NodeSocket.h"
+#include"Input.hpp"
+#include"Config.hpp"
+#include"INode.hpp"
+#include"NodeSocket.hpp"
 
 namespace NodeEditor
 {

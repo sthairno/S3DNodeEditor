@@ -239,12 +239,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="3rdparty\nameof.hpp" />
-    <ClInclude Include="Config.h" />
-    <ClInclude Include="INode.h" />
-    <ClInclude Include="Input.h" />
-    <ClInclude Include="NodeEditor.h" />
-    <ClInclude Include="NodeSocket.h" />
-    <ClInclude Include="Type.h" />
+    <ClInclude Include="Config.hpp" />
+    <ClInclude Include="INode.hpp" />
+    <ClInclude Include="Input.hpp" />
+    <ClInclude Include="NodeEditor.hpp" />
+    <ClInclude Include="NodeSocket.hpp" />
+    <ClInclude Include="Type.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

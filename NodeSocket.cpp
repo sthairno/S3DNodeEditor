@@ -1,5 +1,5 @@
-#include"INode.h"
-#include"NodeSocket.h"
+#include"INode.hpp"
+#include"NodeSocket.hpp"
 
 void NodeEditor::ISocket::disconnect(std::shared_ptr<ISocket> ptr)
 {

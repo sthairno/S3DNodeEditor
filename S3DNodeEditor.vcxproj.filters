@@ -394,22 +394,22 @@
     </Xml>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Type.h">
+    <ClInclude Include="Type.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NodeSocket.h">
+    <ClInclude Include="NodeSocket.hpp">
       <Filter>Header Files\NodeEditor</Filter>
     </ClInclude>
-    <ClInclude Include="NodeEditor.h">
+    <ClInclude Include="NodeEditor.hpp">
       <Filter>Header Files\NodeEditor</Filter>
     </ClInclude>
-    <ClInclude Include="Input.h">
+    <ClInclude Include="Input.hpp">
       <Filter>Header Files\NodeEditor</Filter>
     </ClInclude>
-    <ClInclude Include="INode.h">
+    <ClInclude Include="INode.hpp">
       <Filter>Header Files\NodeEditor</Filter>
     </ClInclude>
-    <ClInclude Include="Config.h">
+    <ClInclude Include="Config.hpp">
       <Filter>Header Files\NodeEditor</Filter>
     </ClInclude>
     <ClInclude Include="3rdparty\nameof.hpp">
