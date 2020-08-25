@@ -73,7 +73,6 @@ namespace NodeEditor
 		template<class T>
 		T getInput(const size_t index) const
 		{
-			Print << index;
 			return std::any_cast<T>(m_inputSockets[index]->value());
 		}
 
