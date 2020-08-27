@@ -414,79 +414,43 @@ namespace NodeEditor
 
 			if (m_grabFrom)
 			{
-				static auto updateSocket = [this](std::shared_ptr<ISocket> socket)
-				{
-					auto pos = socket->calcPos(m_config);
-					auto circle = Circle(pos, m_config.ConnectorSize / 2);
-
-					if (m_grabFrom->canConnect(*socket) && m_input.mouseOver(circle))
-					{
-						m_candidateSocket = socket;
-					}
-				};
 				//接続の候補を検索
-				std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [](auto& keyvalue)
+				std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& keyvalue)
 					{
 						auto node = keyvalue.second;
-						for (auto& socket : node->getInputSockets())
+						for (auto& socket : node->getSockets())
 						{
-							updateSocket(socket);
-						}
-						for (auto& socket : node->getOutputSockets())
-						{
-							updateSocket(socket);
-						}
-						for (auto& socket : node->getPrevNodeSockets())
-						{
-							updateSocket(socket);
-						}
-						for (auto& socket : node->getNextNodeSockets())
-						{
-							updateSocket(socket);
+							auto pos = socket->calcPos(m_config);
+							auto circle = Circle(pos, m_config.ConnectorSize / 2);
+
+							if (m_grabFrom->canConnect(*socket) && m_input.mouseOver(circle))
+							{
+								m_candidateSocket = socket;
+							}
 						}
 					});
 			}
 			else
 			{
-				static auto updateSocket = [this](std::shared_ptr<ISocket> socket)
-				{
-					auto pos = socket->calcPos(m_config);
-					auto circle = Circle(pos, m_config.ConnectorSize / 2);
-
-					if (m_input.leftClicked(circle))
-					{
-						//編集開始
-						m_grabFrom = socket;
-					}
-					else if (m_input.rightClicked(circle))
-					{
-						//接続解除
-						ISocket::disconnect(socket);
-					}
-				};
-
-				std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [](auto& keyvalue)
+				std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& keyvalue)
 					{
 						auto node = keyvalue.second;
 
-						for (auto& socket : node->getInputSockets())
+						for (auto& socket : node->getSockets())
 						{
-							updateSocket(socket);
-						}
+							auto pos = socket->calcPos(m_config);
+							auto circle = Circle(pos, m_config.ConnectorSize / 2);
 
-						for (auto& socket : node->getOutputSockets())
-						{
-							updateSocket(socket);
-						}
-
-						for (auto& socket : node->getPrevNodeSockets())
-						{
-							updateSocket(socket);
-						}
-
-						for (auto& socket : node->getNextNodeSockets())
-						{
-							updateSocket(socket);
+							if (m_input.leftClicked(circle))
+							{
+								//編集開始
+								m_grabFrom = socket;
+							}
+							else if (m_input.rightClicked(circle))
+							{
+								//接続解除
+								ISocket::disconnect(socket);
+							}
 						}
 					});
 			}
@@ -517,26 +481,18 @@ namespace NodeEditor
 		void drawCables()
 		{
 			Vec2 start, end;
-			static auto drawSocket = [&](std::shared_ptr<ISocket> socket)
-			{
-				auto outSockets = socket->ConnectedSocket;
-				for (const auto& outSocket : outSockets)
-				{
-					start = outSocket->calcPos(m_config);
-					end = socket->calcPos(m_config);
-					drawCable(start, end);
-				}
-			};
 			for (auto& keyvalue : m_nodelist)
 			{
 				auto node = keyvalue.second;
-				for (auto& inSocket : node->getInputSockets())
+				for (auto& inSocket : node->getAllInputSockets())
 				{
-					drawSocket(inSocket);
-				}
-				for (auto& prevSocket : node->getPrevNodeSockets())
-				{
-					drawSocket(prevSocket);
+					auto outSockets = inSocket->ConnectedSocket;
+					for (const auto& outSocket : outSockets)
+					{
+						start = outSocket->calcPos(m_config);
+						end = inSocket->calcPos(m_config);
+						drawCable(start, end);
+					}
 				}
 			}
 			if (m_grabFrom)

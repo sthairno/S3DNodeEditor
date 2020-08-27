@@ -147,6 +147,75 @@ namespace NodeEditor
 			return m_nextNodeSockets;
 		}
 
+		const Array<std::shared_ptr<ISocket>> getAllInputSockets() const
+		{
+			Array<std::shared_ptr<ISocket>> result(m_inputSockets.size() + m_prevNodeSockets.size());
+			size_t idx = 0;
+			for (const auto& socket : m_inputSockets)
+			{
+				result[idx++] = socket;
+			}
+			for (const auto& socket : m_prevNodeSockets)
+			{
+				result[idx++] = socket;
+			}
+			return result;
+		}
+
+		const Array<std::shared_ptr<ISocket>> getAllOutputSockets() const
+		{
+			Array<std::shared_ptr<ISocket>> result(m_outputSockets.size() + m_nextNodeSockets.size());
+			size_t idx = 0;
+			for (const auto& socket : m_outputSockets)
+			{
+				result[idx++] = socket;
+			}
+			for (const auto& socket : m_nextNodeSockets)
+			{
+				result[idx++] = socket;
+			}
+			return result;
+		}
+
+		const Array<std::shared_ptr<ValueSocket>> getValueSockets() const
+		{
+			Array<std::shared_ptr<ValueSocket>> result;
+			result.append(m_inputSockets);
+			result.append(m_outputSockets);
+			return result;
+		}
+
+		const Array<std::shared_ptr<ExecSocket>> getExecSockets() const
+		{
+			Array<std::shared_ptr<ExecSocket>> result;
+			result.append(m_prevNodeSockets);
+			result.append(m_nextNodeSockets);
+			return result;
+		}
+
+		const Array<std::shared_ptr<ISocket>> getSockets() const
+		{
+			Array<std::shared_ptr<ISocket>> result(m_inputSockets.size() + m_prevNodeSockets.size() + m_outputSockets.size() + m_nextNodeSockets.size());
+			size_t idx = 0;
+			for (const auto& socket : m_inputSockets)
+			{
+				result[idx++] = socket;
+			}
+			for (const auto& socket : m_prevNodeSockets)
+			{
+				result[idx++] = socket;
+			}
+			for (const auto& socket : m_outputSockets)
+			{
+				result[idx++] = socket;
+			}
+			for (const auto& socket : m_nextNodeSockets)
+			{
+				result[idx++] = socket;
+			}
+			return result;
+		}
+
 		RectF getRect() const
 		{
 			return RectF(Location, m_size);
