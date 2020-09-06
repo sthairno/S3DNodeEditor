@@ -51,10 +51,10 @@ namespace NodeEditor
 				GeneratorType generator;
 			};
 
-			struct NameSpace
+			struct Group
 			{
 				std::unordered_map<String, INodeClass> classes;
-				std::unordered_map<String, NameSpace> namespaces;
+				std::unordered_map<String, Group> namespaces;
 				String ToString(const String& prefix = U"")
 				{
 					String str;
@@ -70,7 +70,7 @@ namespace NodeEditor
 				}
 			};
 
-			NameSpace global;
+			Group global;
 
 			template<class SubType>
 			void registerType()
@@ -101,6 +101,29 @@ namespace NodeEditor
 				}
 				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ true,createFuncGenerator<FuncType>(names[names.size() - 1],argNames,function) });
 			}
+
+			Optional<std::shared_ptr<INode>> get(const String& names)
+			{
+				return get(detail::split(names, U"::"));
+			}
+
+			Optional<std::shared_ptr<INode>> get(const Array<String>& names)
+			{
+				auto targetNamespace = std::ref(global);
+				for (size_t i = 0; i < names.size() - 1; i++)
+				{
+					targetNamespace = targetNamespace.get().namespaces[names[i]];
+				}
+				auto result = targetNamespace.get().classes.find(names[names.size() - 1]);
+				if (result == targetNamespace.get().classes.end())
+				{
+					return none;
+				}
+				else
+				{
+					return result->second.generator();
+				}
+			}
 		};
 
 		class NodeListWindow
@@ -122,7 +145,7 @@ namespace NodeEditor
 
 			const Texture m_anglerightTexture = Texture(Icon(0xf105, 16));
 
-			std::pair<String, INodeGenerator::NameSpace> m_currentNs;
+			std::pair<String, INodeGenerator::Group> m_currentNs;
 
 		public:
 
@@ -615,16 +638,28 @@ namespace NodeEditor
 		String save()
 		{
 			JSONWriter writer;
-			writer.startArray();
 
-			for (const auto& node : m_nodelist)
+			writer.startObject();
 			{
-				node->serialize(writer);
+				writer.key(U"nodes").startArray();
+				for (const auto& node : m_nodelist)
+				{
+					node->serialize(writer);
+				}
+				writer.endArray();
 			}
-
-			writer.endArray();
+			writer.endObject();
 
 			return writer.get();
+		}
+
+		void load(const JSONReader& json)
+		{
+			m_nodelist.clear();
+			for (const auto& item : json[U"nodes"].arrayView())
+			{
+				
+			}
 		}
 	};
 }
