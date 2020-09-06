@@ -48,12 +48,6 @@ namespace NodeEditor
 		static void disconnect(std::shared_ptr<ISocket> ptr);
 
 		static void connect(std::shared_ptr<ISocket> ptr, std::shared_ptr<ISocket> to);
-
-		//Jsonシリアライズ/デシリアライズ
-
-		//virtual void serialize(JSONWriter&) const override = 0;
-
-		//virtual void deserialize(const JSONValue&) override = 0;
 	};
 
 	class ValueSocket : public ISocket

@@ -104,6 +104,7 @@ void NodeEditor::ValueSocket::serialize(JSONWriter& writer) const
 
 void NodeEditor::ValueSocket::deserialize(const JSONValue&)
 {
+
 }
 
 bool NodeEditor::ExecSocket::canConnectSameType(const ISocket&)
@@ -134,4 +135,5 @@ void NodeEditor::ExecSocket::serialize(JSONWriter& writer) const
 
 void NodeEditor::ExecSocket::deserialize(const JSONValue&)
 {
+
 }

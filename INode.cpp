@@ -381,4 +381,5 @@ void NodeEditor::INode::serialize(JSONWriter& writer) const
 
 void NodeEditor::INode::deserialize(const JSONValue& json)
 {
+
 }
