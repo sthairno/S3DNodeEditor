@@ -12,7 +12,7 @@ namespace NodeEditor
 
 namespace NodeEditor
 {
-	class INode
+	class INode : public ISerializable
 	{
 	private:
 
@@ -24,12 +24,16 @@ namespace NodeEditor
 
 		double m_backHue = 0;
 
+		//Serialize
 		Array<std::shared_ptr<ValueSocket>> m_inputSockets;
 
+		//Serialize
 		Array<std::shared_ptr<ValueSocket>> m_outputSockets;
 
+		//Serialize
 		Array<std::shared_ptr<ExecSocket>> m_prevNodeSockets;
 
+		//Serialize
 		Array<std::shared_ptr<ExecSocket>> m_nextNodeSockets;
 
 		RectF m_rect;
@@ -86,9 +90,13 @@ namespace NodeEditor
 
 	public:
 
+		//Serialize
 		Vec2 Location = Vec2(0, 0);
 
 		String Name = U"";
+
+		//Serialize
+		size_t ID = 0;
 
 		INode()
 		{
@@ -126,6 +134,15 @@ namespace NodeEditor
 			}
 			return std::any_cast<T>(outSocket->value());
 		}
+
+		RectF getRect() const
+		{
+			return RectF(Location, m_size);
+		}
+
+		~INode();
+
+		//ソケット取得
 
 		const Array<std::shared_ptr<ValueSocket>> getInputSockets() const
 		{
@@ -216,12 +233,11 @@ namespace NodeEditor
 			return result;
 		}
 
-		RectF getRect() const
-		{
-			return RectF(Location, m_size);
-		}
+		//Jsonシリアライズ/デシリアライズ
 
-		~INode();
+		void serialize(JSONWriter&) const override;
+
+		void deserialize(const JSONValue&) override;
 	};
 
 	namespace detail

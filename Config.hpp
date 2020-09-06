@@ -56,4 +56,13 @@ namespace NodeEditor
 	{
 		Input, Output
 	};
+
+	class ISerializable
+	{
+	public:
+
+		virtual void serialize(JSONWriter&) const = 0;
+
+		virtual void deserialize(const JSONValue&) = 0;
+	};
 }

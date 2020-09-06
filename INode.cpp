@@ -1,4 +1,4 @@
-#include"INode.h"
+#include "INode.hpp"
 
 Triangle EquilateralTriangle(const Vec2& center, const double& r, const double& theta)
 {
@@ -31,7 +31,7 @@ void NodeEditor::INode::calcSize(const Config& cfg)
 	{
 		const float width = static_cast<float>(cfg.font(nextSocket->Name).region().w);
 		if (width > outWidthMax)
-		{
+		{	
 			outWidthMax = width;
 		}
 	}
@@ -330,4 +330,55 @@ NodeEditor::INode::~INode()
 	{
 		ISocket::disconnect(socket);
 	}
+}
+
+void NodeEditor::INode::serialize(JSONWriter& writer) const
+{
+	writer.startObject();
+	{
+		writer.key(U"id").write(ID);
+
+		writer.key(U"location").write(Location);
+		
+		writer.key(U"inputSockets").startArray();
+		{
+			for (const auto& socket : m_inputSockets)
+			{
+				socket->serialize(writer);
+			}
+		}
+		writer.endArray();
+
+		writer.key(U"outputSockets").startArray();
+		{
+			for (const auto& socket : m_outputSockets)
+			{
+				socket->serialize(writer);
+			}
+		}
+		writer.endArray();
+
+		writer.key(U"prevNodeSockets").startArray();
+		{
+			for (const auto& socket : m_prevNodeSockets)
+			{
+				socket->serialize(writer);
+			}
+		}
+		writer.endArray();
+
+		writer.key(U"nextNodeSockets").startArray();
+		{
+			for (const auto& socket : m_nextNodeSockets)
+			{
+				socket->serialize(writer);
+			}
+		}
+		writer.endArray();
+	}
+	writer.endObject();
+}
+
+void NodeEditor::INode::deserialize(const JSONValue& json)
+{
 }

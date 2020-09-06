@@ -387,7 +387,7 @@ namespace NodeEditor
 			None, Output, Input
 		};
 
-		std::map<uint32, std::shared_ptr<INode>> m_nodelist;
+		Array<std::shared_ptr<INode>> m_nodelist;
 
 		uint32 m_nextId = 1;
 
@@ -415,9 +415,8 @@ namespace NodeEditor
 			if (m_grabFrom)
 			{
 				//接続の候補を検索
-				std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& keyvalue)
+				std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& node)
 					{
-						auto node = keyvalue.second;
 						for (auto& socket : node->getSockets())
 						{
 							auto pos = socket->calcPos(m_config);
@@ -432,10 +431,8 @@ namespace NodeEditor
 			}
 			else
 			{
-				std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& keyvalue)
+				std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& node)
 					{
-						auto node = keyvalue.second;
-
 						for (auto& socket : node->getSockets())
 						{
 							auto pos = socket->calcPos(m_config);
@@ -481,9 +478,8 @@ namespace NodeEditor
 		void drawCables()
 		{
 			Vec2 start, end;
-			for (auto& keyvalue : m_nodelist)
+			for (auto& node : m_nodelist)
 			{
-				auto node = keyvalue.second;
 				for (auto& inSocket : node->getAllInputSockets())
 				{
 					auto outSockets = inSocket->ConnectedSocket;
@@ -519,9 +515,8 @@ namespace NodeEditor
 		//ノードの更新
 		void updateNodes()
 		{
-			std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& keyvalue)
+			std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& node)
 				{
-					auto node = keyvalue.second;
 					node->update(m_config, m_input);
 				});
 		}
@@ -529,9 +524,8 @@ namespace NodeEditor
 		//ノードの描画
 		void drawNodes()
 		{
-			for (auto& keyvalue : m_nodelist)
+			for (auto& node : m_nodelist)
 			{
-				auto node = keyvalue.second;
 				node->draw(m_config);
 			}
 		}
@@ -613,8 +607,24 @@ namespace NodeEditor
 
 		void addNode(std::shared_ptr<INode> node, const Vec2& pos = Vec2(0, 0))
 		{
-			m_nodelist[m_nextId++] = node;
+			m_nodelist << node;
+			node->ID = m_nextId++;
 			node->Location = pos;
+		}
+
+		String save()
+		{
+			JSONWriter writer;
+			writer.startArray();
+
+			for (const auto& node : m_nodelist)
+			{
+				node->serialize(writer);
+			}
+
+			writer.endArray();
+
+			return writer.get();
 		}
 	};
 }
