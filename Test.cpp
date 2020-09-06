@@ -1,8 +1,46 @@
 #include<Siv3D.hpp>
-#include<any>
-#include<typeinfo>
 #include"Input.hpp"
 #include"NodeEditor.hpp"
+
+class UpdateFrameNode : public NodeEditor::INode
+{
+public:
+
+	UpdateFrameNode()
+	{
+		cfgNextExecSocket({ U"" });
+
+		Name = U"Update";
+	}
+};
+
+class BranchNode : public NodeEditor::INode
+{
+private:
+
+	void childRun() override
+	{
+		if (getInput<bool>(0))
+		{
+			NextExecIdx = 0;
+		}
+		else
+		{
+			NextExecIdx = 1;
+		}
+	}
+
+public:
+
+	BranchNode()
+	{
+		cfgInputSockets({ {Type::getType<bool>(),U"Cond"} });
+		cfgPrevExecSocket({ U"" });
+		cfgNextExecSocket({ U"True",U"False" });
+
+		Name = U"Branch";
+	}
+};
 
 namespace Value
 {
@@ -73,7 +111,6 @@ namespace Value
 
 		IntegerNode()
 		{
-			cfgInputSockets({ });
 			cfgOutputSockets({ {Type::getType<int>(),U"Val"} });
 
 			ChildSize = SizeF(1, 0);
@@ -81,348 +118,141 @@ namespace Value
 			Name = U"Int32";
 		}
 	};
-
-	class RealNode : public NodeEditor::INode
-	{
-	private:
-
-		void childRun() override
-		{
-			setOutput(0, Value);
-		}
-
-		void childDraw(const NodeEditor::Config& cfg) override
-		{
-			if (KeyW.down())Value++;
-			if (KeyS.down())Value--;
-			cfg.font(Value).draw(0, 0, Palette::Black);
-		}
-
-	public:
-
-		double Value = Random(-100, 100);
-
-		RealNode()
-		{
-			cfgInputSockets({ });
-			cfgOutputSockets({ {Type::getType<double>(),U"Val"} });
-
-			ChildSize = SizeF(20, 20);
-
-			Name = U"double";
-		}
-	};
 }
 
-namespace Calc
+void RegisterNodes(NodeEditor::NodeEditor& editor, P2Body& player)
 {
-	class IncrementNode : public NodeEditor::INode
-	{
-	private:
-
-		void childRun() override
-		{
-			auto val = getInput<int>(0);
-
-			setOutput(0, val + 1);
-		}
-
-	public:
-
-		IncrementNode()
-		{
-			cfgInputSockets({ {Type::getType<int>(),U"A"} });
-			cfgOutputSockets({ {Type::getType<int>(),U"A+1"} });
-
-			ChildSize = SizeF(0, 0);
-
-			Name = U"Inc";
-		}
-	};
-
-	class AddNode : public NodeEditor::INode
-	{
-	private:
-
-		void childRun() override
-		{
-			auto valA = getInput<int>(0);
-			auto valB = getInput<int>(1);
-
-			setOutput(0, valA + valB);
-		}
-
-	public:
-
-		AddNode()
-		{
-			cfgInputSockets({ {Type::getType<int>(),U"A"},{Type::getType<int>(),U"B"} });
-			cfgOutputSockets({ {Type::getType<int>(),U"A+B"} });
-
-			ChildSize = SizeF(0, 0);
-
-			Name = U"Add";
-		}
-	};
-
-	class IsEqualNode : public NodeEditor::INode
-	{
-	private:
-
-		void childRun() override
-		{
-			auto a = getInput<int>(0);
-			auto b = getInput<int>(1);
-
-			setOutput(0, a == b);
-		}
-
-	public:
-
-		IsEqualNode()
-		{
-			cfgInputSockets({ {Type::getType<int>(),U"A"},{Type::getType<int>(),U"B"} });
-			cfgOutputSockets({ {Type::getType<bool>(),U"A==B"} });
-			cfgPrevExecSocket({});
-			cfgNextExecSocket({});
-
-			Name = U"Equal";
-		}
-	};
-}
-
-class PreviewNode : public NodeEditor::INode
-{
-private:
-
-	Optional<String> result;
-
-	void childRun() override
-	{
-		try
-		{
-			result = Format(getInput<int>(0));
-		}
-		catch (std::exception ex)
-		{
-			result = Unicode::FromUTF8(ex.what());
-		}
-	}
-
-	void childDraw(const NodeEditor::Config& cfg) override
-	{
-		String text;
-
-		text = Format(result);
-
-		cfg.font(text).draw(0, 0, Palette::Black);
-	}
-
-public:
-
-	PreviewNode()
-	{
-		cfgInputSockets({ {Type::getType<int>(),U"Val"} });
-		cfgNextExecSocket({ U"" });
-		cfgPrevExecSocket({ U"" });
-
-		ChildSize = SizeF(20, 20);
-
-		Name = U"Preview";
-	}
-};
-
-template<typename InputType, typename OutputType>
-class CastNode : public NodeEditor::INode
-{
-private:
-
-	void childRun() override
-	{
-		auto val = getInput<InputType>(0);
-
-		setOutput(0, static_cast<OutputType>(val));
-	}
-
-public:
-
-	CastNode()
-	{
-		Type inputType = Type::getType<InputType>();
-		Type outputType = Type::getType<OutputType>();
-		cfgInputSockets({ {inputType,inputType.name()} });
-		cfgOutputSockets({ {outputType,outputType.name()} });
-
-		ChildSize = SizeF(0, 0);
-
-		Name = U"Cast";
-	}
-};
-
-class UpdateFrameNode : public NodeEditor::INode
-{
-public:
-
-	UpdateFrameNode()
-	{
-		cfgNextExecSocket({ U"" });
-
-		ChildSize = SizeF(0, 0);
-
-		Name = U"Update";
-	}
-};
-
-class BranchNode : public NodeEditor::INode
-{
-private:
-
-	void childRun() override
-	{
-		if (getInput<bool>(0))
-		{
-			NextExecIdx = 0;
-		}
-		else
-		{
-			NextExecIdx = 1;
-		}
-	}
-
-public:
-
-	BranchNode()
-	{
-		cfgInputSockets({ {Type::getType<bool>(),U"Cond"} });
-		cfgOutputSockets({ });
-		cfgPrevExecSocket({ U"" });
-		cfgNextExecSocket({ U"True",U"False" });
-
-		ChildSize = SizeF(0, 0);
-
-		Name = U"Branch";
-	}
-};
-
-class PrintNode : public NodeEditor::INode
-{
-private:
-
-	void childRun() override
-	{
-		Print << getInput<String>(0);
-	}
-
-public:
-
-	PrintNode()
-	{
-		cfgInputSockets({ {Type::getType<String>(),U"Text"} });
-		cfgOutputSockets({ });
-		cfgPrevExecSocket({ U"" });
-		cfgNextExecSocket({ U"" });
-
-		Name = U"Print";
-	}
-};
-
-void Main()
-{
-	Window::Resize(1280, 800);
-
-	Vec2 playerPos(0, 0);
-
-	const int gripHeight = 5;
-	bool gripGrab = false;
-
-	int editorHeight = 300;
-
-	Size nodeEditorSize(Scene::Width(), editorHeight);
-
-	NodeEditor::NodeEditor editor(nodeEditorSize);
-	
-	editor.registerNodeType<Value::IntegerNode>();
-	editor.registerNodeType<Value::RealNode>();
-
-	editor.registerNodeType<Calc::IncrementNode>();
-	editor.registerNodeType<Calc::AddNode>();
-	editor.registerNodeType<Calc::IsEqualNode>();
-
-	editor.registerNodeType<CastNode<int, double>>();
-	editor.registerNodeType<CastNode<double, int>>();
-
-	editor.registerNodeType<PreviewNode>();
 	editor.registerNodeType<BranchNode>();
-	editor.registerNodeType<PrintNode>();
+	editor.registerNodeType<Value::IntegerNode>();
 
-	editor.registerNodeFunction<void(Point)>(U"Player::Move", { U"vec" }, [&](Point vec)
+	editor.registerNodeFunction<bool()>(U"Input::KeyUp.pressed", { U"" }, []()
 		{
-			playerPos += vec;
+			return KeyUp.pressed();
+		});
+	editor.registerNodeFunction<bool()>(U"Input::KeyUp.down", { U"" }, []()
+		{
+			return KeyUp.down();
+		});
+	editor.registerNodeFunction<bool()>(U"Input::KeyDown.pressed", { U"" }, []()
+		{
+			return KeyDown.pressed();
+		});
+	editor.registerNodeFunction<bool()>(U"Input::KeyDown.down", { U"" }, []()
+		{
+			return KeyDown.down();
+		});
+	editor.registerNodeFunction<bool()>(U"Input::KeyLeft.pressed", { U"" }, []()
+		{
+			return KeyLeft.pressed();
+		});
+	editor.registerNodeFunction<bool()>(U"Input::KeyLeft.down", { U"" }, []()
+		{
+			return KeyLeft.down();
+		});
+	editor.registerNodeFunction<bool()>(U"Input::KeyRight.pressed", { U"" }, []()
+		{
+			return KeyRight.pressed();
+		});
+	editor.registerNodeFunction<bool()>(U"Input::KeyRight.down", { U"" }, []()
+		{
+			return KeyRight.down();
+		});
+
+	editor.registerNodeFunction<void(Point)>(U"Player::AddForce", { U"Point" }, [&](Point point)
+		{
+			return player.applyForce(point);
 		});
 
 	editor.registerNodeFunction<Point(int, int)>(U"Point::Point(int,int)", { U"Point",U"x",U"y" }, [](int x, int y)
 		{
 			return Point(x, y);
 		});
+}
 
-	editor.registerNodeFunction<bool()>(U"KeyUp.pressed()", { U"" }, []()
-		{
-			return KeyUp.pressed();
-		});
+void Main()
+{
+	Window::Resize(1280, 800);
 
-	editor.registerNodeFunction<bool()>(U"KeyDown.pressed()", { U"" }, []()
-		{
-			return KeyDown.pressed();
-		});
+	const int gripHeight = 5;
+	bool gripGrab = false;
 
-	editor.registerNodeFunction<bool()>(U"KeyLeft.pressed()", { U"" }, []()
-		{
-			return KeyLeft.pressed();
-		});
+	int editorHeight = 300;
+	bool editorVisible = true;
 
-	editor.registerNodeFunction<bool()>(U"KeyRight.pressed()", { U"" }, []()
-		{
-			return KeyRight.pressed();
-		});
+	Size nodeEditorSize(Scene::Width(), editorHeight);
 
-	editor.registerNodeFunction<void(int, double)>(U"TestFunc", { U"a",U"b" }, [](int a, double b)
-		{
-			Print << U"{},{}"_fmt(a, b);
-		});
+	NodeEditor::NodeEditor editor(nodeEditorSize);
 
 	auto updateNode = std::make_shared<UpdateFrameNode>();
 	editor.addNode(updateNode);
 
+	Font font(10);
+
+	// 2D 物理演算
+	Camera2D camera(Vec2(0, 0), 20.0, Camera2DParameters::NoControl());
+	P2World world(9.8);
+	const P2Body line = world.createStaticLine(Vec2(0, 0), Line(-10, 0, 60, 0));
+	const P2Body block = world.createStaticRect({ 20,-1 }, SizeF(2, 2));
+	P2Body plus = world.createStaticPolygon({ 40,-6 }, Shape2D::Plus(5, 0.4).asPolygon());
+
+	P2Body player = world.createCircle({ 0,-5 }, 1);
+
+	// ノード登録
+	RegisterNodes(editor, player);
+
 	while (System::Update())
 	{
+		// 2D カメラを更新
+		camera.update();
+		{
+			const auto t = camera.createTransformer();
+			line.draw(Palette::Skyblue);
+			block.draw(Palette::White);
+			plus.draw(Palette::White);
+			player.draw(Palette::Red);
+		}
+
 		auto gripRect = RectF(0, Scene::Height() - editorHeight - gripHeight, Scene::Width(), gripHeight);
 
-		if (gripRect.mouseOver())
+		auto visibleBtn = RectF(Arg::bottomRight = editorVisible ? gripRect.tr() : Scene::Size(), 40, 20);
+		if (visibleBtn.leftClicked())
 		{
-			Cursor::RequestStyle(CursorStyle::ResizeUpDown);
-			if (MouseL.down())
-			{
-				gripGrab = true;
-			}
+			editorVisible = !editorVisible;
 		}
-		if (gripGrab)
+		visibleBtn.draw();
+		if (editorVisible)
 		{
-			Cursor::RequestStyle(CursorStyle::ResizeUpDown);
-			editorHeight -= Cursor::Delta().y;
-			editorHeight = Clamp(editorHeight, 100, Scene::Height() - gripHeight);
-			if (!MouseL.pressed())
+			if (gripRect.mouseOver())
 			{
-				nodeEditorSize.y = editorHeight;
-				editor.resize(nodeEditorSize);
-				gripGrab = false;
+				Cursor::RequestStyle(CursorStyle::ResizeUpDown);
+				if (MouseL.down())
+				{
+					gripGrab = true;
+				}
 			}
-		}
+			if (gripGrab)
+			{
+				Cursor::RequestStyle(CursorStyle::ResizeUpDown);
+				editorHeight -= Cursor::Delta().y;
+				editorHeight = Clamp(editorHeight, 100, Scene::Height() - gripHeight);
+				if (!MouseL.pressed())
+				{
+					nodeEditorSize.y = editorHeight;
+					editor.resize(nodeEditorSize);
+					gripGrab = false;
+				}
+			}
 
-		editor.draw({ 0,Scene::Height() - editorHeight });
-		gripRect.draw();
+			editor.draw({ 0,Scene::Height() - editorHeight });
+			gripRect.draw();
+		}
 
 		updateNode->run();
+		plus.setAngle(Periodic::Sawtooth0_1(2s) * Math::TwoPi);
+		camera.setTargetCenter(player.getPos());
 
-		Circle(playerPos, 10).draw(Palette::Red);
+		world.update();
+
+		font(editor.save()).draw(0, 0, Palette::White);
 	}
 }
