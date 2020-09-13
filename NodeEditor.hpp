@@ -32,15 +32,25 @@ namespace NodeEditor
 			std::regex prefixRegex = std::regex("^(?:class |struct )?(.*)$");
 
 			template<class SubType>
-			GeneratorType createGenerator()
+			GeneratorType createGenerator(const String& className)
 			{
-				return []() {return std::make_shared<SubType>(); };
+				return [=]()
+				{
+					auto inode = std::make_shared<SubType>();
+					inode->Class = className;
+					return inode;
+				};
 			}
 
 			template<class FuncType>
-			GeneratorType createFuncGenerator(const String& name, const Array<String>& argNames, const std::function<FuncType>& function)
+			GeneratorType createFuncGenerator(const String& className, const String& name, const Array<String>& argNames, const std::function<FuncType>& function)
 			{
-				return [=]() { return std::make_shared<detail::FunctionNode<FuncType>>(name, argNames, function); };
+				return [=]()
+				{
+					auto inode = std::make_shared<detail::FunctionNode<FuncType>>(name, argNames, function);
+					inode->Class = className;
+					return inode;
+				};
 			}
 
 		public:
@@ -86,7 +96,7 @@ namespace NodeEditor
 				{
 					targetNamespace = targetNamespace.get().namespaces[names[i]];
 				}
-				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ false,createGenerator<SubType>() });
+				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ false,createGenerator<SubType>(names.join(U"::",U"",U"")) });
 			}
 
 			template<class FuncType>
@@ -99,15 +109,15 @@ namespace NodeEditor
 				{
 					targetNamespace = targetNamespace.get().namespaces[names[i]];
 				}
-				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ true,createFuncGenerator<FuncType>(names[names.size() - 1],argNames,function) });
+				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ true,createFuncGenerator<FuncType>(names.join(U"::",U"",U""),names[names.size() - 1],argNames,function) });
 			}
 
-			Optional<std::shared_ptr<INode>> get(const String& names)
+			Optional<std::shared_ptr<INode>> getINode(const String& names)
 			{
-				return get(detail::split(names, U"::"));
+				return getINode(detail::split(names, U"::"));
 			}
 
-			Optional<std::shared_ptr<INode>> get(const Array<String>& names)
+			Optional<std::shared_ptr<INode>> getINode(const Array<String>& names)
 			{
 				auto targetNamespace = std::ref(global);
 				for (size_t i = 0; i < names.size() - 1; i++)
@@ -553,6 +563,13 @@ namespace NodeEditor
 			}
 		}
 
+		void addNode(std::shared_ptr<INode> node, const Vec2& pos = Vec2(0, 0))
+		{
+			m_nodelist << node;
+			node->ID = m_nextId++;
+			node->Location = pos;
+		}
+
 	public:
 
 		NodeEditor(Size size)
@@ -628,11 +645,16 @@ namespace NodeEditor
 			m_inodeGenerator.registerFunction<FuncType>(name, argNames, function);
 		}
 
-		void addNode(std::shared_ptr<INode> node, const Vec2& pos = Vec2(0, 0))
+		Optional<std::shared_ptr<INode>> addNode(const String& name, const Vec2& pos = Vec2(0, 0))
 		{
-			m_nodelist << node;
-			node->ID = m_nextId++;
-			node->Location = pos;
+			auto inode = m_inodeGenerator.getINode(name);
+			if (inode)
+			{
+				m_nodelist << *inode;
+				(*inode)->ID = m_nextId++;
+				(*inode)->Location = pos;
+			}
+			return inode;
 		}
 
 		String save()
@@ -656,9 +678,22 @@ namespace NodeEditor
 		void load(const JSONReader& json)
 		{
 			m_nodelist.clear();
+			
 			for (const auto& item : json[U"nodes"].arrayView())
 			{
-				
+				auto className = item[U"class"].getString();
+				auto inode = m_inodeGenerator.getINode(className);
+				if (inode)
+				{
+					auto node = (*inode);
+					node->ID = item[U"id"].get<decltype(node->ID)>();
+					node->Location = item[U"location"].get<decltype(node->Location)>();
+					m_nodelist << node;
+				}
+				else
+				{
+					throw new Error(U"クラス\"{}\"が見つかりませんでした"_fmt(className));
+				}
 			}
 		}
 	};

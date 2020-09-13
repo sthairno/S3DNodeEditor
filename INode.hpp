@@ -96,6 +96,9 @@ namespace NodeEditor
 		String Name = U"";
 
 		//Serialize
+		String Class = U"";
+
+		//Serialize
 		size_t ID = 0;
 
 		INode()

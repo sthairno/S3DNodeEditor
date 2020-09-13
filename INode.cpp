@@ -338,6 +338,8 @@ void NodeEditor::INode::serialize(JSONWriter& writer) const
 	{
 		writer.key(U"id").write(ID);
 
+		writer.key(U"class").write(Class);
+
 		writer.key(U"location").write(Location);
 		
 		writer.key(U"inputSockets").startArray();

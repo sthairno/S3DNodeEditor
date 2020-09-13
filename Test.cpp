@@ -122,6 +122,7 @@ namespace Value
 
 void RegisterNodes(NodeEditor::NodeEditor& editor, P2Body& player)
 {
+	editor.registerNodeType<UpdateFrameNode>();
 	editor.registerNodeType<BranchNode>();
 	editor.registerNodeType<Value::IntegerNode>();
 
@@ -183,11 +184,6 @@ void Main()
 
 	NodeEditor::NodeEditor editor(nodeEditorSize);
 
-	auto updateNode = std::make_shared<UpdateFrameNode>();
-	editor.addNode(updateNode);
-
-	Font font(10);
-
 	// 2D 物理演算
 	Camera2D camera(Vec2(0, 0), 20.0, Camera2DParameters::NoControl());
 	P2World world(9.8);
@@ -199,6 +195,8 @@ void Main()
 
 	// ノード登録
 	RegisterNodes(editor, player);
+
+	auto updateNode = std::dynamic_pointer_cast<UpdateFrameNode>(*editor.addNode(U"UpdateFrameNode"));
 
 	while (System::Update())
 	{
@@ -253,6 +251,20 @@ void Main()
 
 		world.update();
 
-		font(editor.save()).draw(0, 0, Palette::White);
+		if (SimpleGUI::Button(U"Save", { 10,10 }))
+		{
+			if (auto path = Dialog::SaveFile({ FileFilter::JSON() }, U"node.json"))
+			{
+				TextWriter(*path).write(editor.save());
+			}
+		}
+
+		if (SimpleGUI::Button(U"Load", { 10,50 }))
+		{
+			if (auto path = Dialog::OpenFile({ FileFilter::JSON() }, U"node.json"))
+			{
+				editor.load(JSONReader(*path));
+			}
+		}
 	}
 }
