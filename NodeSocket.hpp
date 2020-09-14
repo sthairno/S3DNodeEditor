@@ -18,8 +18,6 @@ namespace NodeEditor
 		
 		virtual bool canConnectSameType(const ISocket& to) = 0;
 
-		void serializeBase(JSONWriter& writer) const;
-
 	public:
 
 		INode& Node;
@@ -48,6 +46,12 @@ namespace NodeEditor
 		static void disconnect(std::shared_ptr<ISocket> ptr);
 
 		static void connect(std::shared_ptr<ISocket> ptr, std::shared_ptr<ISocket> to);
+		
+		//Jsonシリアライズ/デシリアライズ
+
+		void serialize(JSONWriter&) const override;
+
+		void deserialize(const JSONValue&) override;
 	};
 
 	class ValueSocket : public ISocket
@@ -77,12 +81,6 @@ namespace NodeEditor
 		void setValue(std::any value);
 
 		Vec2 calcPos(const Config& cfg) override;
-
-		//Jsonシリアライズ/デシリアライズ
-
-		void serialize(JSONWriter&) const override;
-
-		void deserialize(const JSONValue&) override;
 	};
 
 	class ExecSocket : public ISocket
@@ -99,11 +97,5 @@ namespace NodeEditor
 		}
 
 		Vec2 calcPos(const Config& cfg) override;
-
-		//Jsonシリアライズ/デシリアライズ
-
-		void serialize(JSONWriter&) const override;
-
-		void deserialize(const JSONValue&) override;
 	};
 }

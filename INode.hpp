@@ -241,6 +241,8 @@ namespace NodeEditor
 		void serialize(JSONWriter&) const override;
 
 		void deserialize(const JSONValue&) override;
+
+		void deserializeSockets(const JSONValue&, Array<std::shared_ptr<INode>>&);
 	};
 
 	namespace detail

@@ -31,7 +31,7 @@ void NodeEditor::INode::calcSize(const Config& cfg)
 	{
 		const float width = static_cast<float>(cfg.font(nextSocket->Name).region().w);
 		if (width > outWidthMax)
-		{	
+		{
 			outWidthMax = width;
 		}
 	}
@@ -341,7 +341,7 @@ void NodeEditor::INode::serialize(JSONWriter& writer) const
 		writer.key(U"class").write(Class);
 
 		writer.key(U"location").write(Location);
-		
+
 		writer.key(U"inputSockets").startArray();
 		{
 			for (const auto& socket : m_inputSockets)
@@ -383,5 +383,90 @@ void NodeEditor::INode::serialize(JSONWriter& writer) const
 
 void NodeEditor::INode::deserialize(const JSONValue& json)
 {
+	ID = json[U"id"].get<decltype(ID)>();
 
+	Location = json[U"location"].get<decltype(Location)>();
+}
+
+void NodeEditor::INode::deserializeSockets(const JSONValue& json, Array<std::shared_ptr<INode>>& nodes)
+{
+	for (const auto& socketJson : json[U"inputSockets"].arrayView())
+	{
+		auto index = socketJson[U"index"].get<size_t>();
+		auto socket = m_inputSockets[index];
+		ISocket::disconnect(socket);
+
+		for (const auto& connectedSocket : socketJson[U"connectedSocket"].arrayView())
+		{
+			auto nodeID = connectedSocket[U"nodeID"].get<decltype(ID)>();
+			auto socketIndex = connectedSocket[U"socketIndex"].get<size_t>();
+			for (auto& node : nodes)
+			{
+				if (node->ID == nodeID)
+				{
+					ISocket::connect(socket, node->m_outputSockets[socketIndex]);
+				}
+			}
+		}
+	}
+
+	for (const auto& socketJson : json[U"outputSockets"].arrayView())
+	{
+		auto index = socketJson[U"index"].get<size_t>();
+		auto socket = m_outputSockets[index];
+		ISocket::disconnect(socket);
+
+		for (const auto& connectedSocket : socketJson[U"connectedSocket"].arrayView())
+		{
+			auto nodeID = connectedSocket[U"nodeID"].get<decltype(ID)>();
+			auto socketIndex = connectedSocket[U"socketIndex"].get<size_t>();
+			for (auto& node : nodes)
+			{
+				if (node->ID == nodeID)
+				{
+					ISocket::connect(socket, node->m_inputSockets[socketIndex]);
+				}
+			}
+		}
+	}
+
+	for (const auto& socketJson : json[U"prevNodeSockets"].arrayView())
+	{
+		auto index = socketJson[U"index"].get<size_t>();
+		auto socket = m_prevNodeSockets[index];
+		ISocket::disconnect(socket);
+
+		for (const auto& connectedSocket : socketJson[U"connectedSocket"].arrayView())
+		{
+			auto nodeID = connectedSocket[U"nodeID"].get<decltype(ID)>();
+			auto socketIndex = connectedSocket[U"socketIndex"].get<size_t>();
+			for (auto& node : nodes)
+			{
+				if (node->ID == nodeID)
+				{
+					ISocket::connect(socket, node->m_nextNodeSockets[socketIndex]);
+				}
+			}
+		}
+	}
+
+	for (const auto& socketJson : json[U"nextNodeSockets"].arrayView())
+	{
+		auto index = socketJson[U"index"].get<size_t>();
+		auto socket = m_nextNodeSockets[index];
+		ISocket::disconnect(socket);
+
+		for (const auto& connectedSocket : socketJson[U"connectedSocket"].arrayView())
+		{
+			auto nodeID = connectedSocket[U"nodeID"].get<decltype(ID)>();
+			auto socketIndex = connectedSocket[U"socketIndex"].get<size_t>();
+			for (auto& node : nodes)
+			{
+				if (node->ID == nodeID)
+				{
+					ISocket::connect(socket, node->m_prevNodeSockets[socketIndex]);
+				}
+			}
+		}
+	}
 }

@@ -657,6 +657,18 @@ namespace NodeEditor
 			return inode;
 		}
 
+		Optional<std::shared_ptr<INode>> getNode(size_t id)
+		{
+			for (auto& node : m_nodelist)
+			{
+				if (node->ID == id)
+				{
+					return node;
+				}
+			}
+			return none;
+		}
+
 		String save()
 		{
 			JSONWriter writer;
@@ -677,23 +689,31 @@ namespace NodeEditor
 
 		void load(const JSONReader& json)
 		{
-			m_nodelist.clear();
-			
-			for (const auto& item : json[U"nodes"].arrayView())
+			auto nodes = json[U"nodes"].arrayView();
+			auto nodesCount = json[U"nodes"].arrayCount();
+
+			m_nodelist.resize(nodesCount);
+
+			for (size_t i = 0; i < nodesCount; i++)
 			{
-				auto className = item[U"class"].getString();
+				auto className = nodes[i][U"class"].getString();
 				auto inode = m_inodeGenerator.getINode(className);
 				if (inode)
 				{
 					auto node = (*inode);
-					node->ID = item[U"id"].get<decltype(node->ID)>();
-					node->Location = item[U"location"].get<decltype(node->Location)>();
-					m_nodelist << node;
+					node->deserialize(nodes[i]);
+					m_nodelist[i] = node;
 				}
 				else
 				{
 					throw new Error(U"クラス\"{}\"が見つかりませんでした"_fmt(className));
 				}
+			}
+
+			for (size_t i = 0; i < nodesCount; i++)
+			{
+				auto node = m_nodelist[i];
+				node->deserializeSockets(nodes[i], m_nodelist);
 			}
 		}
 	};
