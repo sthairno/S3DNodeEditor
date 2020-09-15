@@ -377,6 +377,9 @@ void NodeEditor::INode::serialize(JSONWriter& writer) const
 			}
 		}
 		writer.endArray();
+
+		writer.key(U"child");
+		childSerialize(writer);
 	}
 	writer.endObject();
 }
@@ -386,6 +389,8 @@ void NodeEditor::INode::deserialize(const JSONValue& json)
 	ID = json[U"id"].get<decltype(ID)>();
 
 	Location = json[U"location"].get<decltype(Location)>();
+
+	childDeserialize(json[U"child"]);
 }
 
 void NodeEditor::INode::deserializeSockets(const JSONValue& json, Array<std::shared_ptr<INode>>& nodes)

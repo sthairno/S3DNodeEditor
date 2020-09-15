@@ -63,7 +63,7 @@ namespace Value
 
 			if (init)
 			{
-				m_textbox = TextBox(cfg.font, { 0,0 }, 100, unspecified, U"0");
+				m_textbox = TextBox(cfg.font, { 0,0 }, 100, unspecified, Format(m_value));
 			}
 
 			switch (m_textbox->update(!input.getProc() && MouseL.down()))
@@ -107,6 +107,20 @@ namespace Value
 			}
 		}
 
+		void childSerialize(JSONWriter& writer) const override
+		{
+			writer.write(m_value);
+		}
+
+		void childDeserialize(const JSONValue& json) override
+		{
+			m_value = json.get<decltype(m_value)>();
+			if (m_textbox)
+			{
+				m_textbox->setText(Format(m_value));
+			}
+		}
+
 	public:
 
 		IntegerNode()
@@ -122,7 +136,7 @@ namespace Value
 
 void RegisterNodes(NodeEditor::NodeEditor& editor, P2Body& player)
 {
-	editor.registerNodeType<UpdateFrameNode>();
+	editor.registerNodeType<UpdateFrameNode>(false);
 	editor.registerNodeType<BranchNode>();
 	editor.registerNodeType<Value::IntegerNode>();
 
@@ -265,7 +279,10 @@ void Main()
 			{
 				editor.load(JSONReader(*path));
 				//UpdateFrameNodeのインスタンスを検索
-				updateNode = std::dynamic_pointer_cast<UpdateFrameNode>(*editor.searchNode(U"UpdateFrameNode"));
+				if (auto node = editor.searchNode(U"UpdateFrameNode"))
+				{
+					updateNode = std::dynamic_pointer_cast<UpdateFrameNode>(*node);
+				}
 			}
 		}
 	}

@@ -67,6 +67,7 @@ namespace NodeEditor
 			struct INodeClass
 			{
 				bool isFunction;
+				bool visible;
 				GeneratorType generator;
 			};
 
@@ -92,7 +93,7 @@ namespace NodeEditor
 			Group global;
 
 			template<class SubType>
-			void registerType()
+			void registerType(bool visible = true)
 			{
 				Type type = Type::getType<SubType>();
 
@@ -103,7 +104,7 @@ namespace NodeEditor
 				{
 					targetNamespace = targetNamespace.get().namespaces[names[i]];
 				}
-				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ false,createGenerator<SubType>(names.join(U"::",U"",U"")) });
+				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ false,visible,createGenerator<SubType>(names.join(U"::",U"",U"")) });
 			}
 
 			template<class FuncType>
@@ -116,7 +117,7 @@ namespace NodeEditor
 				{
 					targetNamespace = targetNamespace.get().namespaces[names[i]];
 				}
-				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ true,createFuncGenerator<FuncType>(names.join(U"::",U"",U""),names[names.size() - 1],argNames,function) });
+				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ true,true,createFuncGenerator<FuncType>(names.join(U"::",U"",U""),names[names.size() - 1],argNames,function) });
 			}
 
 			Optional<std::shared_ptr<INode>> getINode(const Type& type)
@@ -212,13 +213,16 @@ namespace NodeEditor
 					}
 					for (auto& keyval : m_currentNs.second.classes)
 					{
-						if (input.leftClicked(RectF(fontPos, width, cfg.font.height())))
+						if (keyval.second.visible)
 						{
-							result = keyval.second.generator();
-							hide();
-							goto exitInput;
+							if (input.leftClicked(RectF(fontPos, width, cfg.font.height())))
+							{
+								result = keyval.second.generator();
+								hide();
+								goto exitInput;
+							}
+							fontPos.y += cfg.font.height();
 						}
-						fontPos.y += cfg.font.height();
 					}
 
 					if (rect.mouseOver())
@@ -262,13 +266,16 @@ namespace NodeEditor
 					}
 					for (auto& keyval : m_currentNs.second.classes)
 					{
-						RectF btnRect(fontPos, width, cfg.font.height());
-						auto tex = keyval.second.isFunction ? m_functionTexture : m_classTexture;
-						cfg.font(keyval.first).draw(
-							RectF(btnRect.x + tex.width(), btnRect.y, btnRect.w - tex.width(), btnRect.h)
-							, Palette::Black);
-						tex.draw(Arg::leftCenter = btnRect.leftCenter());
-						fontPos.y += cfg.font.height();
+						if (keyval.second.visible)
+						{
+							RectF btnRect(fontPos, width, cfg.font.height());
+							auto tex = keyval.second.isFunction ? m_functionTexture : m_classTexture;
+							cfg.font(keyval.first).draw(
+								RectF(btnRect.x + tex.width(), btnRect.y, btnRect.w - tex.width(), btnRect.h)
+								, Palette::Black);
+							tex.draw(Arg::leftCenter = btnRect.leftCenter());
+							fontPos.y += cfg.font.height();
+						}
 					}
 				}
 			}
@@ -646,9 +653,9 @@ namespace NodeEditor
 		}
 
 		template<class NodeType>
-		void registerNodeType()
+		void registerNodeType(bool visible = true)
 		{
-			m_inodeGenerator.registerType<NodeType>();
+			m_inodeGenerator.registerType<NodeType>(visible);
 		}
 
 		template<class FuncType>

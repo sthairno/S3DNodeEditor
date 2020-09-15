@@ -68,6 +68,14 @@ namespace NodeEditor
 
 		virtual void childDraw(const Config&) {};
 
+		virtual void childSerialize(JSONWriter& writer) const
+		{
+			writer.startObject();
+			writer.endObject();
+		};
+
+		virtual void childDeserialize(const JSONValue&) {};
+
 		template<class T>
 		void setOutput(const size_t index, const T& input)
 		{
