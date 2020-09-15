@@ -445,6 +445,8 @@ namespace NodeEditor
 
 		std::shared_ptr<ISocket> m_grabFrom;
 
+		bool m_isGrab = false;
+
 		RenderTexture m_texture;
 
 		Config m_config;
@@ -464,7 +466,7 @@ namespace NodeEditor
 		{
 			m_candidateSocket = nullptr;
 
-			if (m_grabFrom)
+			if (m_isGrab)
 			{
 				//接続の候補を検索
 				std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& node)
@@ -494,6 +496,7 @@ namespace NodeEditor
 							{
 								//編集開始
 								m_grabFrom = socket;
+								m_isGrab = true;
 							}
 							else if (m_input.rightClicked(circle))
 							{
@@ -504,7 +507,7 @@ namespace NodeEditor
 					});
 			}
 
-			if (m_grabFrom)
+			if (m_isGrab)
 			{
 				if (!MouseL.pressed())
 				{
@@ -516,7 +519,7 @@ namespace NodeEditor
 					{
 						m_nodelistWindow.show(Cursor::PosF());
 					}
-					m_grabFrom = nullptr;
+					m_isGrab = false;
 				}
 			}
 		}
@@ -543,7 +546,7 @@ namespace NodeEditor
 					}
 				}
 			}
-			if (m_grabFrom)
+			if (m_isGrab)
 			{
 				switch (m_grabFrom->SocketType)
 				{
@@ -630,6 +633,17 @@ namespace NodeEditor
 					if (node)
 					{
 						addNode(node, m_nodelistWindow.m_location);
+						if (m_grabFrom)
+						{
+							for (auto socket : node->getSockets())
+							{
+								if (m_grabFrom->canConnect(*socket))
+								{
+									ISocket::connect(m_grabFrom, socket);
+								}
+							}
+							m_grabFrom = nullptr;
+						}
 					}
 
 					updateNodes();
