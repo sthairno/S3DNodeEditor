@@ -32,15 +32,34 @@ namespace NodeEditor
 			std::regex prefixRegex = std::regex("^(?:class |struct )?(.*)$");
 
 			template<class SubType>
-			GeneratorType createGenerator()
+			GeneratorType createGenerator(const String& className)
 			{
-				return []() {return std::make_shared<SubType>(); };
+				return [=]()
+				{
+					auto inode = std::make_shared<SubType>();
+					inode->Class = className;
+					return inode;
+				};
 			}
 
 			template<class FuncType>
-			GeneratorType createFuncGenerator(const String& name, const Array<String>& argNames, const std::function<FuncType>& function)
+			GeneratorType createFuncGenerator(const String& className, const String& name, const Array<String>& argNames, const std::function<FuncType>& function)
 			{
-				return [=]() { return std::make_shared<detail::FunctionNode<FuncType>>(name, argNames, function); };
+				return [=]()
+				{
+					auto inode = std::make_shared<detail::FunctionNode<FuncType>>(name, argNames, function);
+					inode->Class = className;
+					return inode;
+				};
+			}
+
+			Array<String> parseNames(const String& name)
+			{
+				std::cmatch match;
+				std::string stdstring = name.toUTF8();
+				std::regex_match(stdstring.c_str(), match, prefixRegex);
+
+				return detail::split(Unicode::FromUTF8(match[1].str()), U"::");
 			}
 
 		public:
@@ -48,13 +67,14 @@ namespace NodeEditor
 			struct INodeClass
 			{
 				bool isFunction;
+				bool visible;
 				GeneratorType generator;
 			};
 
-			struct NameSpace
+			struct Group
 			{
 				std::unordered_map<String, INodeClass> classes;
-				std::unordered_map<String, NameSpace> namespaces;
+				std::unordered_map<String, Group> namespaces;
 				String ToString(const String& prefix = U"")
 				{
 					String str;
@@ -70,36 +90,62 @@ namespace NodeEditor
 				}
 			};
 
-			NameSpace global;
+			Group global;
 
 			template<class SubType>
-			void registerType()
+			void registerType(bool visible = true)
 			{
 				Type type = Type::getType<SubType>();
-				std::cmatch match;
-				std::regex_match(typeid(SubType).name(), match, prefixRegex);
 
-				auto names = detail::split(Unicode::FromUTF8(match[1].str()), U"::");
+				auto names = parseNames(Unicode::FromUTF8(typeid(SubType).name()));
 
 				auto targetNamespace = std::ref(global);
 				for (size_t i = 0; i < names.size() - 1; i++)
 				{
 					targetNamespace = targetNamespace.get().namespaces[names[i]];
 				}
-				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ false,createGenerator<SubType>() });
+				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ false,visible,createGenerator<SubType>(names.join(U"::",U"",U"")) });
 			}
 
 			template<class FuncType>
 			void registerFunction(const String& name, const Array<String>& argNames, const std::function<FuncType>& function)
 			{
-				auto names = detail::split(name, U"::");
+				auto names = parseNames(name);
 
 				auto targetNamespace = std::ref(global);
 				for (size_t i = 0; i < names.size() - 1; i++)
 				{
 					targetNamespace = targetNamespace.get().namespaces[names[i]];
 				}
-				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ true,createFuncGenerator<FuncType>(names[names.size() - 1],argNames,function) });
+				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ true,true,createFuncGenerator<FuncType>(names.join(U"::",U"",U""),names[names.size() - 1],argNames,function) });
+			}
+
+			Optional<std::shared_ptr<INode>> getINode(const Type& type)
+			{
+				return getINode(parseNames(type.name()));
+			}
+
+			Optional<std::shared_ptr<INode>> getINode(const String& names)
+			{
+				return getINode(parseNames(names));
+			}
+
+			Optional<std::shared_ptr<INode>> getINode(const Array<String>& names)
+			{
+				auto targetNamespace = std::ref(global);
+				for (size_t i = 0; i < names.size() - 1; i++)
+				{
+					targetNamespace = targetNamespace.get().namespaces[names[i]];
+				}
+				auto result = targetNamespace.get().classes.find(names[names.size() - 1]);
+				if (result == targetNamespace.get().classes.end())
+				{
+					return none;
+				}
+				else
+				{
+					return result->second.generator();
+				}
 			}
 		};
 
@@ -122,7 +168,7 @@ namespace NodeEditor
 
 			const Texture m_anglerightTexture = Texture(Icon(0xf105, 16));
 
-			std::pair<String, INodeGenerator::NameSpace> m_currentNs;
+			std::pair<String, INodeGenerator::Group> m_currentNs;
 
 		public:
 
@@ -167,13 +213,16 @@ namespace NodeEditor
 					}
 					for (auto& keyval : m_currentNs.second.classes)
 					{
-						if (input.leftClicked(RectF(fontPos, width, cfg.font.height())))
+						if (keyval.second.visible)
 						{
-							result = keyval.second.generator();
-							hide();
-							goto exitInput;
+							if (input.leftClicked(RectF(fontPos, width, cfg.font.height())))
+							{
+								result = keyval.second.generator();
+								hide();
+								goto exitInput;
+							}
+							fontPos.y += cfg.font.height();
 						}
-						fontPos.y += cfg.font.height();
 					}
 
 					if (rect.mouseOver())
@@ -217,13 +266,16 @@ namespace NodeEditor
 					}
 					for (auto& keyval : m_currentNs.second.classes)
 					{
-						RectF btnRect(fontPos, width, cfg.font.height());
-						auto tex = keyval.second.isFunction ? m_functionTexture : m_classTexture;
-						cfg.font(keyval.first).draw(
-							RectF(btnRect.x + tex.width(), btnRect.y, btnRect.w - tex.width(), btnRect.h)
-							, Palette::Black);
-						tex.draw(Arg::leftCenter = btnRect.leftCenter());
-						fontPos.y += cfg.font.height();
+						if (keyval.second.visible)
+						{
+							RectF btnRect(fontPos, width, cfg.font.height());
+							auto tex = keyval.second.isFunction ? m_functionTexture : m_classTexture;
+							cfg.font(keyval.first).draw(
+								RectF(btnRect.x + tex.width(), btnRect.y, btnRect.w - tex.width(), btnRect.h)
+								, Palette::Black);
+							tex.draw(Arg::leftCenter = btnRect.leftCenter());
+							fontPos.y += cfg.font.height();
+						}
 					}
 				}
 			}
@@ -530,6 +582,13 @@ namespace NodeEditor
 			}
 		}
 
+		void addNode(std::shared_ptr<INode> node, const Vec2& pos = Vec2(0, 0))
+		{
+			m_nodelist << node;
+			node->ID = m_nextId++;
+			node->Location = pos;
+		}
+
 	public:
 
 		NodeEditor(Size size)
@@ -594,9 +653,9 @@ namespace NodeEditor
 		}
 
 		template<class NodeType>
-		void registerNodeType()
+		void registerNodeType(bool visible = true)
 		{
-			m_inodeGenerator.registerType<NodeType>();
+			m_inodeGenerator.registerType<NodeType>(visible);
 		}
 
 		template<class FuncType>
@@ -605,26 +664,114 @@ namespace NodeEditor
 			m_inodeGenerator.registerFunction<FuncType>(name, argNames, function);
 		}
 
-		void addNode(std::shared_ptr<INode> node, const Vec2& pos = Vec2(0, 0))
+		template<class NodeType>
+		Optional<std::shared_ptr<NodeType>> addNode(const Vec2& pos = Vec2(0, 0))
 		{
-			m_nodelist << node;
-			node->ID = m_nextId++;
-			node->Location = pos;
+			auto result = addNode(Type::getType<NodeType>(), pos);
+			if (result)
+			{
+				return std::dynamic_pointer_cast<NodeType>(*result);
+			}
+			else
+			{
+				return none;
+			}
+		}
+
+		Optional<std::shared_ptr<INode>> addNode(const String& name, const Vec2& pos = Vec2(0, 0))
+		{
+			auto inode = m_inodeGenerator.getINode(name);
+			if (inode)
+			{
+				m_nodelist << *inode;
+				(*inode)->ID = m_nextId++;
+				(*inode)->Location = pos;
+			}
+			return inode;
+		}
+
+		Optional<std::shared_ptr<INode>> addNode(const Type& type, const Vec2& pos = Vec2(0, 0))
+		{
+			auto inode = m_inodeGenerator.getINode(type);
+			if (inode)
+			{
+				m_nodelist << *inode;
+				(*inode)->ID = m_nextId++;
+				(*inode)->Location = pos;
+			}
+			return inode;
+		}
+
+		Optional<std::shared_ptr<INode>> searchNode(size_t id)
+		{
+			for (auto& node : m_nodelist)
+			{
+				if (node->ID == id)
+				{
+					return node;
+				}
+			}
+			return none;
+		}
+
+		Optional<std::shared_ptr<INode>> searchNode(const String& className)
+		{
+			for (auto& node : m_nodelist)
+			{
+				if (node->Class == className)
+				{
+					return node;
+				}
+			}
+			return none;
 		}
 
 		String save()
 		{
 			JSONWriter writer;
-			writer.startArray();
 
-			for (const auto& node : m_nodelist)
+			writer.startObject();
 			{
-				node->serialize(writer);
+				writer.key(U"nodes").startArray();
+				for (const auto& node : m_nodelist)
+				{
+					node->serialize(writer);
+				}
+				writer.endArray();
 			}
-
-			writer.endArray();
+			writer.endObject();
 
 			return writer.get();
+		}
+
+		void load(const JSONReader& json)
+		{
+			auto nodes = json[U"nodes"].arrayView();
+			auto nodesCount = json[U"nodes"].arrayCount();
+
+			m_nodelist.resize(nodesCount);
+
+			for (size_t i = 0; i < nodesCount; i++)
+			{
+				auto className = nodes[i][U"class"].getString();
+				auto inode = m_inodeGenerator.getINode(className);
+				if (inode)
+				{
+					auto node = (*inode);
+					node->deserialize(nodes[i]);
+					m_nodelist[i] = node;
+				}
+				else
+				{
+					throw new Error(U"クラス\"{}\"が見つかりませんでした"_fmt(className));
+				}
+			}
+
+			for (size_t i = 0; i < nodesCount; i++)
+			{
+				auto node = m_nodelist[i];
+				node->deserializeSockets(nodes[i], m_nodelist);
+			}
 		}
 	};
 }

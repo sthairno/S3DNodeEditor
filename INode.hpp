@@ -68,6 +68,14 @@ namespace NodeEditor
 
 		virtual void childDraw(const Config&) {};
 
+		virtual void childSerialize(JSONWriter& writer) const
+		{
+			writer.startObject();
+			writer.endObject();
+		};
+
+		virtual void childDeserialize(const JSONValue&) {};
+
 		template<class T>
 		void setOutput(const size_t index, const T& input)
 		{
@@ -94,6 +102,9 @@ namespace NodeEditor
 		Vec2 Location = Vec2(0, 0);
 
 		String Name = U"";
+
+		//Serialize
+		String Class = U"";
 
 		//Serialize
 		size_t ID = 0;
@@ -238,6 +249,8 @@ namespace NodeEditor
 		void serialize(JSONWriter&) const override;
 
 		void deserialize(const JSONValue&) override;
+
+		void deserializeSockets(const JSONValue&, Array<std::shared_ptr<INode>>&);
 	};
 
 	namespace detail
