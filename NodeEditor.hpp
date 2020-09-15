@@ -53,6 +53,15 @@ namespace NodeEditor
 				};
 			}
 
+			Array<String> parseNames(const String& name)
+			{
+				std::cmatch match;
+				std::string stdstring = name.toUTF8();
+				std::regex_match(stdstring.c_str(), match, prefixRegex);
+
+				return detail::split(Unicode::FromUTF8(match[1].str()), U"::");
+			}
+
 		public:
 
 			struct INodeClass
@@ -86,10 +95,8 @@ namespace NodeEditor
 			void registerType()
 			{
 				Type type = Type::getType<SubType>();
-				std::cmatch match;
-				std::regex_match(typeid(SubType).name(), match, prefixRegex);
 
-				auto names = detail::split(Unicode::FromUTF8(match[1].str()), U"::");
+				auto names = parseNames(Unicode::FromUTF8(typeid(SubType).name()));
 
 				auto targetNamespace = std::ref(global);
 				for (size_t i = 0; i < names.size() - 1; i++)
@@ -102,7 +109,7 @@ namespace NodeEditor
 			template<class FuncType>
 			void registerFunction(const String& name, const Array<String>& argNames, const std::function<FuncType>& function)
 			{
-				auto names = detail::split(name, U"::");
+				auto names = parseNames(name);
 
 				auto targetNamespace = std::ref(global);
 				for (size_t i = 0; i < names.size() - 1; i++)
@@ -112,9 +119,14 @@ namespace NodeEditor
 				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ true,createFuncGenerator<FuncType>(names.join(U"::",U"",U""),names[names.size() - 1],argNames,function) });
 			}
 
+			Optional<std::shared_ptr<INode>> getINode(const Type& type)
+			{
+				return getINode(parseNames(type.name()));
+			}
+
 			Optional<std::shared_ptr<INode>> getINode(const String& names)
 			{
-				return getINode(detail::split(names, U"::"));
+				return getINode(parseNames(names));
 			}
 
 			Optional<std::shared_ptr<INode>> getINode(const Array<String>& names)
@@ -645,6 +657,20 @@ namespace NodeEditor
 			m_inodeGenerator.registerFunction<FuncType>(name, argNames, function);
 		}
 
+		template<class NodeType>
+		Optional<std::shared_ptr<NodeType>> addNode(const Vec2& pos = Vec2(0, 0))
+		{
+			auto result = addNode(Type::getType<NodeType>(), pos);
+			if (result)
+			{
+				return std::dynamic_pointer_cast<NodeType>(*result);
+			}
+			else
+			{
+				return none;
+			}
+		}
+
 		Optional<std::shared_ptr<INode>> addNode(const String& name, const Vec2& pos = Vec2(0, 0))
 		{
 			auto inode = m_inodeGenerator.getINode(name);
@@ -657,11 +683,35 @@ namespace NodeEditor
 			return inode;
 		}
 
-		Optional<std::shared_ptr<INode>> getNode(size_t id)
+		Optional<std::shared_ptr<INode>> addNode(const Type& type, const Vec2& pos = Vec2(0, 0))
+		{
+			auto inode = m_inodeGenerator.getINode(type);
+			if (inode)
+			{
+				m_nodelist << *inode;
+				(*inode)->ID = m_nextId++;
+				(*inode)->Location = pos;
+			}
+			return inode;
+		}
+
+		Optional<std::shared_ptr<INode>> searchNode(size_t id)
 		{
 			for (auto& node : m_nodelist)
 			{
 				if (node->ID == id)
+				{
+					return node;
+				}
+			}
+			return none;
+		}
+
+		Optional<std::shared_ptr<INode>> searchNode(const String& className)
+		{
+			for (auto& node : m_nodelist)
+			{
+				if (node->Class == className)
 				{
 					return node;
 				}

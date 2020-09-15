@@ -196,7 +196,7 @@ void Main()
 	// ノード登録
 	RegisterNodes(editor, player);
 
-	auto updateNode = std::dynamic_pointer_cast<UpdateFrameNode>(*editor.addNode(U"UpdateFrameNode"));
+	auto updateNode = *editor.addNode<UpdateFrameNode>();
 
 	while (System::Update())
 	{
@@ -264,6 +264,8 @@ void Main()
 			if (auto path = Dialog::OpenFile({ FileFilter::JSON() }, U"node.json"))
 			{
 				editor.load(JSONReader(*path));
+				//UpdateFrameNodeのインスタンスを検索
+				updateNode = std::dynamic_pointer_cast<UpdateFrameNode>(*editor.searchNode(U"UpdateFrameNode"));
 			}
 		}
 	}
