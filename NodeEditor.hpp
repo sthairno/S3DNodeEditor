@@ -740,6 +740,17 @@ namespace NodeEditor
 			return none;
 		}
 
+		void clear()
+		{
+			m_nextId = 1;
+			m_nodelist.clear();
+			m_grabFrom = nullptr;
+			m_isGrab = false;
+			m_camera.setScale(1.0);
+			m_camera.setCenter({ 0,0 });
+			m_candidateSocket = nullptr;
+		}
+
 		String save()
 		{
 			JSONWriter writer;
@@ -760,6 +771,8 @@ namespace NodeEditor
 
 		void load(const JSONReader& json)
 		{
+			clear();
+
 			auto nodes = json[U"nodes"].arrayView();
 			auto nodesCount = json[U"nodes"].arrayCount();
 
