@@ -1,6 +1,7 @@
 #include<Siv3D.hpp>
 #include"Input.hpp"
 #include"NodeEditor.hpp"
+#include"HamFramework.hpp"
 
 class UpdateFrameNode : public NodeEditor::INode
 {
@@ -134,44 +135,122 @@ namespace Value
 	};
 }
 
+namespace Input
+{
+	class KeyUpNode : public NodeEditor::INode
+	{
+	private:
+		void childRun() override
+		{
+			setOutput(0, KeyUp.down());
+			setOutput(1, KeyUp.pressed());
+			setOutput(2, KeyUp.up());
+		}
+
+		void childDraw(const NodeEditor::Config& cfg) override
+		{
+			ChildSize = InputDeviceSymbol::GetSize(KeyUp, cfg.font, cfg.font.fontSize() * 2);
+			InputDeviceSymbol::Draw(KeyUp, KeyUp.pressed(), { 0,0 }, cfg.font, cfg.font.fontSize() * 2);
+		}
+	public:
+		KeyUpNode()
+		{
+			cfgOutputSockets({ {Type::getType<bool>(),U"down"},{Type::getType<bool>(),U"pressed"},{Type::getType<bool>(),U"up"} });
+
+			ChildSize = SizeF(1, 0);
+
+			Name = U"KeyUp";
+		}
+	};
+
+	class KeyDownNode : public NodeEditor::INode
+	{
+	private:
+		void childRun() override
+		{
+			setOutput(0, KeyDown.down());
+			setOutput(1, KeyDown.pressed());
+			setOutput(2, KeyDown.up());
+		}
+
+		void childDraw(const NodeEditor::Config& cfg) override
+		{
+			ChildSize = InputDeviceSymbol::GetSize(KeyDown, cfg.font, cfg.font.fontSize() * 2);
+			InputDeviceSymbol::Draw(KeyDown, KeyDown.pressed(), { 0,0 }, cfg.font, cfg.font.fontSize() * 2);
+		}
+	public:
+		KeyDownNode()
+		{
+			cfgOutputSockets({ {Type::getType<bool>(),U"down"},{Type::getType<bool>(),U"pressed"},{Type::getType<bool>(),U"up"} });
+
+			ChildSize = SizeF(1, 0);
+
+			Name = U"KeyDown";
+		}
+	};
+
+	class KeyLeftNode : public NodeEditor::INode
+	{
+	private:
+		void childRun() override
+		{
+			setOutput(0, KeyLeft.down());
+			setOutput(1, KeyLeft.pressed());
+			setOutput(2, KeyLeft.up());
+		}
+
+		void childDraw(const NodeEditor::Config& cfg) override
+		{
+			ChildSize = InputDeviceSymbol::GetSize(KeyLeft, cfg.font, cfg.font.fontSize() * 2);
+			InputDeviceSymbol::Draw(KeyLeft, KeyLeft.pressed(), { 0,0 }, cfg.font, cfg.font.fontSize() * 2);
+		}
+	public:
+		KeyLeftNode()
+		{
+			cfgOutputSockets({ {Type::getType<bool>(),U"down"},{Type::getType<bool>(),U"pressed"},{Type::getType<bool>(),U"up"} });
+
+			ChildSize = SizeF(1, 0);
+
+			Name = U"KeyLeft";
+		}
+	};
+
+	class KeyRightNode : public NodeEditor::INode
+	{
+	private:
+		void childRun() override
+		{
+			setOutput(0, KeyRight.down());
+			setOutput(1, KeyRight.pressed());
+			setOutput(2, KeyRight.up());
+		}
+
+		void childDraw(const NodeEditor::Config& cfg) override
+		{
+			ChildSize = InputDeviceSymbol::GetSize(KeyRight, cfg.font, cfg.font.fontSize() * 2);
+			InputDeviceSymbol::Draw(KeyRight, KeyRight.pressed(), { 0,0 }, cfg.font, cfg.font.fontSize() * 2);
+		}
+	public:
+		KeyRightNode()
+		{
+			cfgOutputSockets({ {Type::getType<bool>(),U"down"},{Type::getType<bool>(),U"pressed"},{Type::getType<bool>(),U"up"} });
+
+			ChildSize = SizeF(1, 0);
+
+			Name = U"KeyRight";
+		}
+	};
+}
+
 void RegisterNodes(NodeEditor::NodeEditor& editor, P2Body& player)
 {
 	editor.registerNodeType<UpdateFrameNode>(false);
 	editor.registerNodeType<BranchNode>();
 	editor.registerNodeType<Value::IntegerNode>();
-
-	editor.registerNodeFunction<bool()>(U"Input::KeyUp.pressed", { U"" }, []()
-		{
-			return KeyUp.pressed();
-		});
-	editor.registerNodeFunction<bool()>(U"Input::KeyUp.down", { U"" }, []()
-		{
-			return KeyUp.down();
-		});
-	editor.registerNodeFunction<bool()>(U"Input::KeyDown.pressed", { U"" }, []()
-		{
-			return KeyDown.pressed();
-		});
-	editor.registerNodeFunction<bool()>(U"Input::KeyDown.down", { U"" }, []()
-		{
-			return KeyDown.down();
-		});
-	editor.registerNodeFunction<bool()>(U"Input::KeyLeft.pressed", { U"" }, []()
-		{
-			return KeyLeft.pressed();
-		});
-	editor.registerNodeFunction<bool()>(U"Input::KeyLeft.down", { U"" }, []()
-		{
-			return KeyLeft.down();
-		});
-	editor.registerNodeFunction<bool()>(U"Input::KeyRight.pressed", { U"" }, []()
-		{
-			return KeyRight.pressed();
-		});
-	editor.registerNodeFunction<bool()>(U"Input::KeyRight.down", { U"" }, []()
-		{
-			return KeyRight.down();
-		});
+	editor.registerNodeType<Input::KeyUpNode>();
+	editor.registerNodeType<Input::KeyDownNode>();
+	editor.registerNodeType<Input::KeyLeftNode>();
+	editor.registerNodeType<Input::KeyRightNode>();
 
 	editor.registerNodeFunction<void(Point)>(U"Player::AddForce", { U"Point" }, [&](Point point)
 		{
