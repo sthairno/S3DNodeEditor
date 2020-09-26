@@ -55,7 +55,7 @@ void NodeEditor::INode::calcRect(const Config& cfg)
 		m_contentRect = RectF(m_rect.x, m_rect.y + cfg.TitleHeight, m_rect.w, m_rect.h - cfg.TitleHeight - cfg.RectR);
 		{
 			m_socketRect = RectF(m_contentRect.pos, m_contentRect.w, Max(m_inputSockets.size() + m_prevNodeSockets.size(), m_outputSockets.size() + m_nextNodeSockets.size()) * cfg.font.height());
-			m_childRect = RectF(m_socketRect.bl() + Vec2(0, 1), m_contentRect.w, ChildSize.y);
+			m_childRect = RectF(Arg::topCenter = m_socketRect.bottomCenter() + Vec2(0, 1), ChildSize);
 		}
 	}
 }
@@ -73,6 +73,10 @@ void NodeEditor::INode::drawBackground(const Config& cfg)
 
 	//四角の描画
 	roundRect.draw(HSV(m_backHue, s, 0.7));
+	if (Selecting)
+	{
+		roundRect.drawFrame(0, 2, Palette::Orange);
+	}
 	m_contentRect.draw(ColorF(0.9));
 
 	//タイトルの描画
@@ -195,6 +199,11 @@ void NodeEditor::INode::update(const Config& cfg, Input& input)
 	{
 		const Transformer2D transform(Mat3x2::Translate(m_childRect.pos), true);
 		childUpdate(cfg, input);
+	}
+
+	if (!m_isGrab && input.leftClicked(m_rect))
+	{
+		//Selecting = true;
 	}
 }
 

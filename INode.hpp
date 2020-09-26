@@ -109,6 +109,8 @@ namespace NodeEditor
 		//Serialize
 		size_t ID = 0;
 
+		bool Selecting = false;
+
 		INode()
 		{
 
