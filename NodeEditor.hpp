@@ -306,34 +306,42 @@ namespace NodeEditor
 
 			void updateWheel(const SizeF& sceneSize)
 			{
-				const double wheel = Mouse::Wheel();
+				const double wheelY = Mouse::Wheel();
+				const double wheelX = Mouse::WheelH();
 
-				if (wheel == 0.0)
+				if (KeyControl.pressed())
 				{
-					return;
-				}
+					if (wheelY == 0.0)
+					{
+						return;
+					}
 
-				m_positionChangeVelocity = Vec2::Zero();
+					m_positionChangeVelocity = Vec2::Zero();
 
-				if (wheel < 0.0)
-				{
-					m_targetScale *= m_setting.wheelScaleFactor;
+					if (wheelY < 0.0)
+					{
+						m_targetScale *= m_setting.wheelScaleFactor;
+					}
+					else
+					{
+						m_targetScale /= m_setting.wheelScaleFactor;
+					}
+
+					m_targetScale = Clamp(m_targetScale, m_setting.minScale, m_setting.maxScale);
+
+					const Point cursorPos = Cursor::Pos();
+					const Vec2 point = m_center + (cursorPos - (sceneSize * 0.5)) / m_scale;
+					m_pointedScale.emplace(cursorPos, point);
 				}
 				else
 				{
-					m_targetScale /= m_setting.wheelScaleFactor;
+					m_targetCenter += Vec2(wheelX, wheelY) / m_scale;
 				}
-
-				m_targetScale = Clamp(m_targetScale, m_setting.minScale, m_setting.maxScale);
-
-				const Point cursorPos = Cursor::Pos();
-				const Vec2 point = m_center + (cursorPos - (sceneSize * 0.5)) / m_scale;
-				m_pointedScale.emplace(cursorPos, point);
 			}
 
 			void updateMouse(Input& input)
 			{
-				if (input.down(MouseL))
+				if (input.down(MouseM))
 				{
 					m_grab = true;
 					m_pointedScale.reset();
@@ -342,7 +350,7 @@ namespace NodeEditor
 				{
 					m_targetCenter -= Cursor::DeltaF() / m_scale;
 
-					if (MouseL.up())
+					if (MouseM.up())
 					{
 						m_grab = false;
 					}
@@ -447,6 +455,12 @@ namespace NodeEditor
 
 		bool m_isGrab = false;
 
+		bool m_rangeSelection = false;
+
+		Vec2 m_rangeSelectionBegin;
+
+		RectF m_rangeSelectionRange;
+
 		RenderTexture m_texture;
 
 		Config m_config;
@@ -460,6 +474,14 @@ namespace NodeEditor
 		detail::EditorCamera2D m_camera = detail::EditorCamera2D({ 0, 0 });
 
 		std::shared_ptr<ISocket> m_candidateSocket;//接続先の候補(見つからないときはnullptr)
+
+		void deselectAll()
+		{
+			for (auto& node : m_nodelist)
+			{
+				node->Selecting = false;
+			}
+		}
 
 		//ケーブルの更新
 		void updateCables()
@@ -570,9 +592,18 @@ namespace NodeEditor
 		//ノードの更新
 		void updateNodes()
 		{
-			std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& node)
+			bool selectAppend = KeyShift.pressed() || KeyControl.pressed();
+			std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [&](std::shared_ptr<INode>& node)
 				{
 					node->update(m_config, m_input);
+					if (node->clicked())
+					{
+						if (!selectAppend)
+						{
+							deselectAll();
+						}
+						node->Selecting = !node->Selecting;
+					}
 				});
 		}
 
@@ -650,7 +681,53 @@ namespace NodeEditor
 
 					updateCables();
 
+					bool selectAppend = KeyShift.pressed() || KeyControl.pressed();
+					if (!m_input.getProc() && MouseL.down())
+					{
+						if (!selectAppend)
+						{
+							deselectAll();
+						}
+						m_rangeSelection = true;
+						m_rangeSelectionBegin = Cursor::PosF();
+					}
+
+					if (m_rangeSelection)
+					{
+						if (MouseL.pressed())
+						{
+							auto cursor = Cursor::PosF();
+							m_rangeSelectionRange = RectF(
+								Min(cursor.x, m_rangeSelectionBegin.x),
+								Min(cursor.y, m_rangeSelectionBegin.y),
+								Abs(cursor.x - m_rangeSelectionBegin.x),
+								Abs(cursor.y - m_rangeSelectionBegin.y)
+							);
+							for (auto& node : m_nodelist)
+							{
+								bool select = m_rangeSelectionRange.contains(node->getRect());
+								if (selectAppend)
+								{
+									node->Selecting |= select;
+								}
+								else
+								{
+									node->Selecting = select;
+								}
+							}
+						}
+						else
+						{
+							m_rangeSelection = false;
+						}
+					}
+
 					m_camera.update(m_input);
+
+					if (m_rangeSelection)
+					{
+						m_rangeSelectionRange.draw(ColorF(0.4)).drawFrame(2, ColorF(0.44));
+					}
 
 					drawCables();
 

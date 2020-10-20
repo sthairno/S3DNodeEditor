@@ -48,6 +48,8 @@ namespace NodeEditor
 
 		Optional<String> m_errorMsg;
 
+		bool m_clicked = false;
+
 		void calcSize(const Config& cfg);
 
 		void calcRect(const Config& cfg);
@@ -151,6 +153,11 @@ namespace NodeEditor
 		RectF getRect() const
 		{
 			return RectF(Location, m_size);
+		}
+
+		bool clicked() const
+		{
+			return m_clicked;
 		}
 
 		~INode();

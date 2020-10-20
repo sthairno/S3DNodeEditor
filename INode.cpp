@@ -201,10 +201,7 @@ void NodeEditor::INode::update(const Config& cfg, Input& input)
 		childUpdate(cfg, input);
 	}
 
-	if (!m_isGrab && input.leftClicked(m_rect))
-	{
-		//Selecting = true;
-	}
+	m_clicked = !m_isGrab && input.leftClicked(m_rect);
 }
 
 void NodeEditor::INode::draw(const Config& cfg)
