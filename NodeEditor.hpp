@@ -335,7 +335,7 @@ namespace NodeEditor
 				}
 				else
 				{
-					m_targetCenter += Vec2(wheelX, wheelY) / m_scale;
+					m_targetCenter += Vec2(wheelX, wheelY) * 10 / m_scale;
 				}
 			}
 
@@ -410,7 +410,7 @@ namespace NodeEditor
 				m_scaleChangeVelocity = 0.0;
 			}
 
-			void update(Input& input, double deltaTime = Scene::DeltaTime(), const SizeF& sceneSize = Graphics2D::GetRenderTargetSize())
+			void update(Input& input, const SizeF& sceneSize = Graphics2D::GetRenderTargetSize(), double deltaTime = Scene::DeltaTime())
 			{
 				const auto t1 = Transformer2D(m_defaultGraphLocalTransform, m_defaultCursorLocalTransform, Transformer2D::Target::SetLocal);
 				const auto t2 = Transformer2D(m_defaultGraphCameraTransform, m_defaultCursorCameraTransform, Transformer2D::Target::SetCamera);
@@ -446,6 +446,8 @@ namespace NodeEditor
 		{
 			None, Output, Input
 		};
+
+		int32 m_updateFrameCnt = -1;
 
 		Array<std::shared_ptr<INode>> m_nodelist;
 
@@ -546,11 +548,6 @@ namespace NodeEditor
 			}
 		}
 
-		void drawCable(const Vec2& start, const Vec2& end)
-		{
-			Bezier3(start, start + Vec2(m_config.BezierX, 0), end + Vec2(-m_config.BezierX, 0), end).draw(2, Palette::White);
-		}
-
 		//ケーブルの描画
 		void drawCables()
 		{
@@ -589,6 +586,11 @@ namespace NodeEditor
 			}
 		}
 
+		void drawCable(const Vec2& start, const Vec2& end)
+		{
+			Bezier3(start, start + Vec2(m_config.BezierX, 0), end + Vec2(-m_config.BezierX, 0), end).draw(2, Palette::White);
+		}
+
 		//ノードの更新
 		void updateNodes()
 		{
@@ -616,6 +618,60 @@ namespace NodeEditor
 			}
 		}
 
+		//範囲選択の更新
+		void updateRangeSelection()
+		{
+			bool selectAppend = KeyShift.pressed() || KeyControl.pressed();
+			if (!m_input.getProc() && MouseL.down())
+			{
+				if (!selectAppend)
+				{
+					deselectAll();
+				}
+				m_rangeSelection = true;
+				m_rangeSelectionBegin = Cursor::PosF();
+			}
+
+			if (m_rangeSelection)
+			{
+				if (MouseL.pressed())
+				{
+					auto cursor = Cursor::PosF();
+					m_rangeSelectionRange = RectF(
+						Min(cursor.x, m_rangeSelectionBegin.x),
+						Min(cursor.y, m_rangeSelectionBegin.y),
+						Abs(cursor.x - m_rangeSelectionBegin.x),
+						Abs(cursor.y - m_rangeSelectionBegin.y)
+					);
+					for (auto& node : m_nodelist)
+					{
+						bool select = m_rangeSelectionRange.contains(node->getRect());
+						if (selectAppend)
+						{
+							node->Selecting |= select;
+						}
+						else
+						{
+							node->Selecting = select;
+						}
+					}
+				}
+				else
+				{
+					m_rangeSelection = false;
+				}
+			}
+		}
+
+		//範囲選択の描画
+		void drawRangeSelection()
+		{
+			if (m_rangeSelection)
+			{
+				m_rangeSelectionRange.draw(ColorF(0.4)).drawFrame(2, ColorF(0.44));
+			}
+		}
+
 		void addNode(std::shared_ptr<INode> node, const Vec2& pos = Vec2(0, 0))
 		{
 			m_nodelist << node;
@@ -637,11 +693,12 @@ namespace NodeEditor
 		}
 
 		/// <summary>
-		/// 描画,更新処理
+		/// 更新処理
 		/// </summary>
-		/// <param name="drawArea">エディタを表示する範囲</param>
-		void draw(const Vec2 location)
+		/// <param name="location">エディタを表示する位置</param>
+		void update(const Vec2 location)
 		{
+			m_updateFrameCnt = Scene::FrameCount();
 			m_input.start();
 			if (!RectF(location, m_texture.size()).mouseOver())
 			{
@@ -650,13 +707,11 @@ namespace NodeEditor
 			{
 				const ScopedRenderTarget2D renderTarget(m_texture);
 				const ScopedViewport2D viewport(0, 0, m_texture.size());
+				const Transformer2D transformCamera(Mat3x2::Identity(), Mat3x2::Identity(), Transformer2D::Target::SetCamera);
 				const Transformer2D transformMouse(Mat3x2::Identity(), Mat3x2::Translate(location));//マウス位置補正
 
 				m_camera.setDefaultTransform();
 
-				Rect(0, 0, m_texture.size()).draw(ColorF(0.3));
-
-				try
 				{
 					const Transformer2D transformCam(m_camera.getMat3x2(), true);
 
@@ -681,63 +736,43 @@ namespace NodeEditor
 
 					updateCables();
 
-					bool selectAppend = KeyShift.pressed() || KeyControl.pressed();
-					if (!m_input.getProc() && MouseL.down())
-					{
-						if (!selectAppend)
-						{
-							deselectAll();
-						}
-						m_rangeSelection = true;
-						m_rangeSelectionBegin = Cursor::PosF();
-					}
+					updateRangeSelection();
 
-					if (m_rangeSelection)
-					{
-						if (MouseL.pressed())
-						{
-							auto cursor = Cursor::PosF();
-							m_rangeSelectionRange = RectF(
-								Min(cursor.x, m_rangeSelectionBegin.x),
-								Min(cursor.y, m_rangeSelectionBegin.y),
-								Abs(cursor.x - m_rangeSelectionBegin.x),
-								Abs(cursor.y - m_rangeSelectionBegin.y)
-							);
-							for (auto& node : m_nodelist)
-							{
-								bool select = m_rangeSelectionRange.contains(node->getRect());
-								if (selectAppend)
-								{
-									node->Selecting |= select;
-								}
-								else
-								{
-									node->Selecting = select;
-								}
-							}
-						}
-						else
-						{
-							m_rangeSelection = false;
-						}
-					}
+					m_camera.update(m_input, m_texture.size());
+				}
+			}
+		}
 
-					m_camera.update(m_input);
+		/// <summary>
+		/// 描画(更新)処理
+		/// </summary>
+		/// <param name="location">エディタを表示する位置</param>
+		void draw(const Vec2 location)
+		{
+			//更新処理をする前に呼び出された場合、更新処理をする
+			if (m_updateFrameCnt != Scene::FrameCount())
+			{
+				update(location);
+			}
 
-					if (m_rangeSelection)
-					{
-						m_rangeSelectionRange.draw(ColorF(0.4)).drawFrame(2, ColorF(0.44));
-					}
+			{
+				const ScopedRenderTarget2D renderTarget(m_texture);
+				const ScopedViewport2D viewport(0, 0, m_texture.size());
+				const Transformer2D transformCamera(Mat3x2::Identity(), Mat3x2::Identity(), Transformer2D::Target::SetCamera);
+				const Transformer2D transformMouse(Mat3x2::Identity(), Mat3x2::Translate(location));//マウス位置補正
+
+				Rect(0, 0, m_texture.size()).draw(ColorF(0.3));
+
+				{
+					const Transformer2D transformCam(m_camera.getMat3x2(), true);
+
+					drawRangeSelection();
 
 					drawCables();
 
 					drawNodes();
 
 					m_nodelistWindow.draw(m_config);
-				}
-				catch (Error& ex)
-				{
-					m_config.font(ex.what()).drawAt(m_texture.size() / 2, Palette::Black);
 				}
 			}
 			m_texture.draw(location);

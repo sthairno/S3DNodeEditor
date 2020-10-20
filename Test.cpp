@@ -334,7 +334,9 @@ void Main()
 				}
 			}
 
-			editor.draw({ 0,Scene::Height() - editorHeight });
+			const Vec2 editorPos(0, Scene::Height() - editorHeight);
+			editor.update(editorPos);
+			editor.draw(editorPos);
 			gripRect.draw();
 		}
 
