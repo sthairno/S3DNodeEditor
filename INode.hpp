@@ -64,6 +64,8 @@ namespace NodeEditor
 
 		size_t NextExecIdx = 0;
 
+		bool CanDelete = true;
+
 		virtual void childRun() {};
 
 		virtual void childUpdate(const Config&, Input&) {};
@@ -123,6 +125,11 @@ namespace NodeEditor
 		void update(const Config& cfg, Input& input);
 
 		void draw(const Config& cfg);
+
+		bool canDelete() const
+		{
+			return CanDelete;
+		}
 
 		template<class T>
 		void setInput(const size_t idx, const T& input)
@@ -252,6 +259,8 @@ namespace NodeEditor
 			}
 			return result;
 		}
+
+		void disconnectAllSockets();
 
 		//Jsonシリアライズ/デシリアライズ
 

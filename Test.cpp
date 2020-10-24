@@ -12,6 +12,8 @@ public:
 		cfgNextExecSocket({ U"" });
 
 		Name = U"Update";
+
+		CanDelete = false;
 	}
 };
 

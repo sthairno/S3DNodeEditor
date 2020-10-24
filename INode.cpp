@@ -320,6 +320,11 @@ void NodeEditor::INode::draw(const Config& cfg)
 
 NodeEditor::INode::~INode()
 {
+	disconnectAllSockets();
+}
+
+void NodeEditor::INode::disconnectAllSockets()
+{
 	for (auto& socket : m_inputSockets)
 	{
 		ISocket::disconnect(socket);

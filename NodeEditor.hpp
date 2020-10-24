@@ -672,6 +672,23 @@ namespace NodeEditor
 			}
 		}
 
+		//キー入力の更新
+		void updateKeyInput()
+		{
+			if (KeyDelete.down())
+			{
+				m_nodelist.remove_if([this](std::shared_ptr<INode> node)
+					{
+						bool result = node->canDelete() && node->Selecting;
+						if (result)
+						{
+							node->disconnectAllSockets();
+						}
+						return result;
+					});
+			}
+		}
+
 		void addNode(std::shared_ptr<INode> node, const Vec2& pos = Vec2(0, 0))
 		{
 			m_nodelist << node;
@@ -739,6 +756,8 @@ namespace NodeEditor
 					updateRangeSelection();
 
 					m_camera.update(m_input, m_texture.size());
+
+					updateKeyInput();
 				}
 			}
 		}
