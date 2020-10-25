@@ -5,6 +5,7 @@
 #include"Config.hpp"
 #include"INode.hpp"
 #include"NodeSocket.hpp"
+#include"Group.hpp"
 
 namespace NodeEditor
 {
@@ -451,6 +452,8 @@ namespace NodeEditor
 
 		Array<std::shared_ptr<INode>> m_nodelist;
 
+		Array<std::shared_ptr<Group>> m_grouplist;
+
 		uint32 m_nextId = 1;
 
 		std::shared_ptr<ISocket> m_grabFrom;
@@ -458,6 +461,8 @@ namespace NodeEditor
 		bool m_isGrab = false;
 
 		bool m_rangeSelection = false;
+
+		bool m_rangeSelectionIsGroup = false;
 
 		Vec2 m_rangeSelectionBegin;
 
@@ -621,13 +626,10 @@ namespace NodeEditor
 		//範囲選択の更新
 		void updateRangeSelection()
 		{
-			bool selectAppend = KeyShift.pressed() || KeyControl.pressed();
+			m_rangeSelectionIsGroup = KeyControl.pressed();
 			if (!m_input.getProc() && MouseL.down())
 			{
-				if (!selectAppend)
-				{
-					deselectAll();
-				}
+				deselectAll();
 				m_rangeSelection = true;
 				m_rangeSelectionBegin = Cursor::PosF();
 			}
@@ -645,20 +647,19 @@ namespace NodeEditor
 					);
 					for (auto& node : m_nodelist)
 					{
-						bool select = m_rangeSelectionRange.contains(node->getRect());
-						if (selectAppend)
-						{
-							node->Selecting |= select;
-						}
-						else
-						{
-							node->Selecting = select;
-						}
+						node->Selecting = m_rangeSelectionRange.contains(node->getRect());
 					}
 				}
 				else
 				{
 					m_rangeSelection = false;
+					if (m_rangeSelectionIsGroup)
+					{
+						auto group = std::make_shared<Group>();
+						group->Rect = m_rangeSelectionRange;
+						group->Name = U"Group";
+						m_grouplist << group;
+					}
 				}
 			}
 		}
@@ -668,7 +669,34 @@ namespace NodeEditor
 		{
 			if (m_rangeSelection)
 			{
-				m_rangeSelectionRange.draw(ColorF(0.4)).drawFrame(2, ColorF(0.44));
+				if (m_rangeSelectionIsGroup)
+				{
+					Group group;
+					group.Rect = m_rangeSelectionRange;
+					group.draw(m_config);
+				}
+				else
+				{
+					m_rangeSelectionRange.draw(ColorF(0.4)).drawFrame(2, ColorF(0.44));
+				}
+			}
+		}
+
+		//グループの更新
+		void updateGroups()
+		{
+			std::for_each(std::rbegin(m_grouplist), std::rend(m_grouplist), [&](std::shared_ptr<Group>& group)
+				{
+					group->update(m_config, m_input, m_nodelist);
+				});
+		}
+
+		//グループの描画
+		void drawGroups()
+		{
+			for (auto& group : m_grouplist)
+			{
+				group->draw(m_config);
 			}
 		}
 
@@ -753,6 +781,8 @@ namespace NodeEditor
 
 					updateCables();
 
+					updateGroups();
+
 					updateRangeSelection();
 
 					m_camera.update(m_input, m_texture.size());
@@ -784,6 +814,8 @@ namespace NodeEditor
 
 				{
 					const Transformer2D transformCam(m_camera.getMat3x2(), true);
+
+					drawGroups();
 
 					drawRangeSelection();
 
@@ -875,6 +907,7 @@ namespace NodeEditor
 		{
 			m_nextId = 1;
 			m_nodelist.clear();
+			m_grouplist.clear();
 			m_grabFrom = nullptr;
 			m_isGrab = false;
 			m_camera.setScale(1.0);

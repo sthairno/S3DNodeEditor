@@ -120,6 +120,9 @@
     <ClCompile Include="NodeSocket.cpp">
       <Filter>Source Files\NodeEditor</Filter>
     </ClCompile>
+    <ClCompile Include="Group.cpp">
+      <Filter>Source Files\NodeEditor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="App\icon.ico">
@@ -414,6 +417,9 @@
     </ClInclude>
     <ClInclude Include="3rdparty\nameof.hpp">
       <Filter>Header Files\3rdparty</Filter>
+    </ClInclude>
+    <ClInclude Include="Group.hpp">
+      <Filter>Header Files\NodeEditor</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
