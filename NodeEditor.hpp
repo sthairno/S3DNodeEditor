@@ -159,6 +159,8 @@ namespace NodeEditor
 
 			bool m_visible = false;
 
+			Vec2 m_windowLocation;
+
 			const NodeGenerator& m_generator;
 
 			const Texture m_nsTexture = Texture(U"icons/namespace.png");
@@ -173,7 +175,7 @@ namespace NodeEditor
 
 		public:
 
-			Vec2 m_location;
+			Vec2 m_nodeLocation;
 
 			NodeListWindow(const NodeGenerator& generator)
 				:m_generator(generator)
@@ -184,7 +186,7 @@ namespace NodeEditor
 			void show(const Vec2& pos)
 			{
 				m_currentNs = { U"global",m_generator.global };
-				m_location = pos;
+				m_nodeLocation = pos;
 				m_visible = true;
 			}
 
@@ -193,14 +195,16 @@ namespace NodeEditor
 				m_visible = false;
 			}
 
-			std::shared_ptr<Node> update(const Config& cfg, Input& input)
+			std::shared_ptr<Node> update(const Config& cfg, Input& input, const Mat3x2& mat)
 			{
 				std::shared_ptr<Node> result;
 
 				if (m_visible)
 				{
-					const RectF rect(m_location, width, cfg.font.height() * (lineCnt + 1));
-					const RectF contentRect(m_location.x, m_location.y + cfg.font.height(), width, cfg.font.height() * lineCnt);
+					m_windowLocation = mat.transform(m_nodeLocation);
+
+					const RectF rect(m_windowLocation, width, cfg.font.height() * (lineCnt + 1));
+					const RectF contentRect(m_windowLocation.x, m_windowLocation.y + cfg.font.height(), width, cfg.font.height() * lineCnt);
 					Vec2 fontPos = contentRect.pos;
 
 					for (auto& keyval : m_currentNs.second.namespaces)
@@ -246,9 +250,9 @@ namespace NodeEditor
 			{
 				if (m_visible)
 				{
-					const RectF rect(m_location, width, cfg.font.height() * (lineCnt + 1));
-					const RectF titleRect(m_location, width, cfg.font.height());
-					const RectF contentRect(m_location.x, m_location.y + cfg.font.height(), width, cfg.font.height() * lineCnt);
+					const RectF rect(m_windowLocation, width, cfg.font.height() * (lineCnt + 1));
+					const RectF titleRect(m_windowLocation, width, cfg.font.height());
+					const RectF contentRect(m_windowLocation.x, m_windowLocation.y + cfg.font.height(), width, cfg.font.height() * lineCnt);
 
 					rect.draw(ColorF(0.9));
 					titleRect.draw(ColorF(0.7));
@@ -758,12 +762,10 @@ namespace NodeEditor
 				m_camera.setDefaultTransform();
 
 				{
-					const Transformer2D transformCam(m_camera.getMat3x2(), true);
-
-					auto node = m_nodelistWindow.update(m_config, m_input);
+					auto node = m_nodelistWindow.update(m_config, m_input, m_camera.getMat3x2());
 					if (node)
 					{
-						addNode(node, m_nodelistWindow.m_location);
+						addNode(node, m_nodelistWindow.m_nodeLocation);
 						if (m_grabFrom)
 						{
 							for (auto socket : node->getSockets())
@@ -776,6 +778,9 @@ namespace NodeEditor
 							m_grabFrom = nullptr;
 						}
 					}
+				}
+				{
+					const Transformer2D transformCam(m_camera.getMat3x2(), true);
 
 					updateNodes();
 
@@ -822,9 +827,8 @@ namespace NodeEditor
 					drawCables();
 
 					drawNodes();
-
-					m_nodelistWindow.draw(m_config);
 				}
+				m_nodelistWindow.draw(m_config);
 			}
 			m_texture.draw(location);
 		}
