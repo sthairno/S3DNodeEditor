@@ -80,8 +80,7 @@ namespace NodeEditor
 			return !m_proc && obj.mouseOver();
 		}
 
-		template<class Shape>
-		bool down(const Shape& key)
+		bool down(const Key& key)
 		{
 			return key.down() && updateProc();
 		}

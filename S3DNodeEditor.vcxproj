@@ -109,7 +109,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp" />
-    <ClCompile Include="INode.cpp" />
+    <ClCompile Include="Group.cpp" />
+    <ClCompile Include="Node.cpp" />
     <ClCompile Include="Test.cpp" />
     <ClCompile Include="NodeSocket.cpp" />
   </ItemGroup>
@@ -240,7 +241,8 @@
   <ItemGroup>
     <ClInclude Include="3rdparty\nameof.hpp" />
     <ClInclude Include="Config.hpp" />
-    <ClInclude Include="INode.hpp" />
+    <ClInclude Include="Group.hpp" />
+    <ClInclude Include="Node.hpp" />
     <ClInclude Include="Input.hpp" />
     <ClInclude Include="NodeEditor.hpp" />
     <ClInclude Include="NodeSocket.hpp" />

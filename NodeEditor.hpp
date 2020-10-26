@@ -3,8 +3,9 @@
 #include<regex>
 #include"Input.hpp"
 #include"Config.hpp"
-#include"INode.hpp"
+#include"Node.hpp"
 #include"NodeSocket.hpp"
+#include"Group.hpp"
 
 namespace NodeEditor
 {
@@ -23,11 +24,11 @@ namespace NodeEditor
 			return result;
 		}
 
-		class INodeGenerator
+		class NodeGenerator
 		{
 		private:
 
-			using GeneratorType = std::function<std::shared_ptr<INode>(void)>;
+			using GeneratorType = std::function<std::shared_ptr<Node>(void)>;
 
 			std::regex prefixRegex = std::regex("^(?:class |struct )?(.*)$");
 
@@ -64,7 +65,7 @@ namespace NodeEditor
 
 		public:
 
-			struct INodeClass
+			struct NodeClass
 			{
 				bool isFunction;
 				bool visible;
@@ -73,7 +74,7 @@ namespace NodeEditor
 
 			struct Group
 			{
-				std::unordered_map<String, INodeClass> classes;
+				std::unordered_map<String, NodeClass> classes;
 				std::unordered_map<String, Group> namespaces;
 				String ToString(const String& prefix = U"")
 				{
@@ -104,7 +105,7 @@ namespace NodeEditor
 				{
 					targetNamespace = targetNamespace.get().namespaces[names[i]];
 				}
-				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ false,visible,createGenerator<SubType>(names.join(U"::",U"",U"")) });
+				targetNamespace.get().classes.emplace(names[names.size() - 1], NodeClass{ false,visible,createGenerator<SubType>(names.join(U"::",U"",U"")) });
 			}
 
 			template<class FuncType>
@@ -117,20 +118,20 @@ namespace NodeEditor
 				{
 					targetNamespace = targetNamespace.get().namespaces[names[i]];
 				}
-				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ true,true,createFuncGenerator<FuncType>(names.join(U"::",U"",U""),names[names.size() - 1],argNames,function) });
+				targetNamespace.get().classes.emplace(names[names.size() - 1], NodeClass{ true,true,createFuncGenerator<FuncType>(names.join(U"::",U"",U""),names[names.size() - 1],argNames,function) });
 			}
 
-			Optional<std::shared_ptr<INode>> getINode(const Type& type)
+			Optional<std::shared_ptr<Node>> getNode(const Type& type)
 			{
-				return getINode(parseNames(type.name()));
+				return getNode(parseNames(type.name()));
 			}
 
-			Optional<std::shared_ptr<INode>> getINode(const String& names)
+			Optional<std::shared_ptr<Node>> getNode(const String& names)
 			{
-				return getINode(parseNames(names));
+				return getNode(parseNames(names));
 			}
 
-			Optional<std::shared_ptr<INode>> getINode(const Array<String>& names)
+			Optional<std::shared_ptr<Node>> getNode(const Array<String>& names)
 			{
 				auto targetNamespace = std::ref(global);
 				for (size_t i = 0; i < names.size() - 1; i++)
@@ -158,7 +159,7 @@ namespace NodeEditor
 
 			bool m_visible = false;
 
-			const INodeGenerator& m_generator;
+			const NodeGenerator& m_generator;
 
 			const Texture m_nsTexture = Texture(U"icons/namespace.png");
 
@@ -168,13 +169,13 @@ namespace NodeEditor
 
 			const Texture m_anglerightTexture = Texture(Icon(0xf105, 16));
 
-			std::pair<String, INodeGenerator::Group> m_currentNs;
+			std::pair<String, NodeGenerator::Group> m_currentNs;
 
 		public:
 
 			Vec2 m_location;
 
-			NodeListWindow(const INodeGenerator& generator)
+			NodeListWindow(const NodeGenerator& generator)
 				:m_generator(generator)
 			{
 
@@ -192,9 +193,9 @@ namespace NodeEditor
 				m_visible = false;
 			}
 
-			std::shared_ptr<INode> update(const Config& cfg, Input& input)
+			std::shared_ptr<Node> update(const Config& cfg, Input& input)
 			{
-				std::shared_ptr<INode> result;
+				std::shared_ptr<Node> result;
 
 				if (m_visible)
 				{
@@ -306,34 +307,42 @@ namespace NodeEditor
 
 			void updateWheel(const SizeF& sceneSize)
 			{
-				const double wheel = Mouse::Wheel();
+				const double wheelY = Mouse::Wheel();
+				const double wheelX = Mouse::WheelH();
 
-				if (wheel == 0.0)
+				if (KeyControl.pressed())
 				{
-					return;
-				}
+					if (wheelY == 0.0)
+					{
+						return;
+					}
 
-				m_positionChangeVelocity = Vec2::Zero();
+					m_positionChangeVelocity = Vec2::Zero();
 
-				if (wheel < 0.0)
-				{
-					m_targetScale *= m_setting.wheelScaleFactor;
+					if (wheelY < 0.0)
+					{
+						m_targetScale *= m_setting.wheelScaleFactor;
+					}
+					else
+					{
+						m_targetScale /= m_setting.wheelScaleFactor;
+					}
+
+					m_targetScale = Clamp(m_targetScale, m_setting.minScale, m_setting.maxScale);
+
+					const Point cursorPos = Cursor::Pos();
+					const Vec2 point = m_center + (cursorPos - (sceneSize * 0.5)) / m_scale;
+					m_pointedScale.emplace(cursorPos, point);
 				}
 				else
 				{
-					m_targetScale /= m_setting.wheelScaleFactor;
+					m_targetCenter += Vec2(wheelX, wheelY) * 10 / m_scale;
 				}
-
-				m_targetScale = Clamp(m_targetScale, m_setting.minScale, m_setting.maxScale);
-
-				const Point cursorPos = Cursor::Pos();
-				const Vec2 point = m_center + (cursorPos - (sceneSize * 0.5)) / m_scale;
-				m_pointedScale.emplace(cursorPos, point);
 			}
 
 			void updateMouse(Input& input)
 			{
-				if (input.down(MouseL))
+				if (input.down(MouseM))
 				{
 					m_grab = true;
 					m_pointedScale.reset();
@@ -342,7 +351,7 @@ namespace NodeEditor
 				{
 					m_targetCenter -= Cursor::DeltaF() / m_scale;
 
-					if (MouseL.up())
+					if (MouseM.up())
 					{
 						m_grab = false;
 					}
@@ -402,7 +411,7 @@ namespace NodeEditor
 				m_scaleChangeVelocity = 0.0;
 			}
 
-			void update(Input& input, double deltaTime = Scene::DeltaTime(), const SizeF& sceneSize = Graphics2D::GetRenderTargetSize())
+			void update(Input& input, const SizeF& sceneSize = Graphics2D::GetRenderTargetSize(), double deltaTime = Scene::DeltaTime())
 			{
 				const auto t1 = Transformer2D(m_defaultGraphLocalTransform, m_defaultCursorLocalTransform, Transformer2D::Target::SetLocal);
 				const auto t2 = Transformer2D(m_defaultGraphCameraTransform, m_defaultCursorCameraTransform, Transformer2D::Target::SetCamera);
@@ -439,11 +448,25 @@ namespace NodeEditor
 			None, Output, Input
 		};
 
-		Array<std::shared_ptr<INode>> m_nodelist;
+		int32 m_updateFrameCnt = -1;
+
+		Array<std::shared_ptr<Node>> m_nodelist;
+
+		Array<std::shared_ptr<Group>> m_grouplist;
 
 		uint32 m_nextId = 1;
 
 		std::shared_ptr<ISocket> m_grabFrom;
+
+		bool m_isGrab = false;
+
+		bool m_rangeSelection = false;
+
+		bool m_rangeSelectionIsGroup = false;
+
+		Vec2 m_rangeSelectionBegin;
+
+		RectF m_rangeSelectionRange;
 
 		RenderTexture m_texture;
 
@@ -451,7 +474,7 @@ namespace NodeEditor
 
 		Input m_input;
 
-		detail::INodeGenerator m_inodeGenerator;
+		detail::NodeGenerator m_inodeGenerator;
 
 		detail::NodeListWindow m_nodelistWindow;
 
@@ -459,12 +482,20 @@ namespace NodeEditor
 
 		std::shared_ptr<ISocket> m_candidateSocket;//接続先の候補(見つからないときはnullptr)
 
+		void deselectAll()
+		{
+			for (auto& node : m_nodelist)
+			{
+				node->Selecting = false;
+			}
+		}
+
 		//ケーブルの更新
 		void updateCables()
 		{
 			m_candidateSocket = nullptr;
 
-			if (m_grabFrom)
+			if (m_isGrab)
 			{
 				//接続の候補を検索
 				std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& node)
@@ -494,6 +525,7 @@ namespace NodeEditor
 							{
 								//編集開始
 								m_grabFrom = socket;
+								m_isGrab = true;
 							}
 							else if (m_input.rightClicked(circle))
 							{
@@ -504,7 +536,7 @@ namespace NodeEditor
 					});
 			}
 
-			if (m_grabFrom)
+			if (m_isGrab)
 			{
 				if (!MouseL.pressed())
 				{
@@ -516,14 +548,9 @@ namespace NodeEditor
 					{
 						m_nodelistWindow.show(Cursor::PosF());
 					}
-					m_grabFrom = nullptr;
+					m_isGrab = false;
 				}
 			}
-		}
-
-		void drawCable(const Vec2& start, const Vec2& end)
-		{
-			Bezier3(start, start + Vec2(m_config.BezierX, 0), end + Vec2(-m_config.BezierX, 0), end).draw(2, Palette::White);
 		}
 
 		//ケーブルの描画
@@ -543,7 +570,7 @@ namespace NodeEditor
 					}
 				}
 			}
-			if (m_grabFrom)
+			if (m_isGrab)
 			{
 				switch (m_grabFrom->SocketType)
 				{
@@ -564,12 +591,26 @@ namespace NodeEditor
 			}
 		}
 
+		void drawCable(const Vec2& start, const Vec2& end)
+		{
+			Bezier3(start, start + Vec2(m_config.BezierX, 0), end + Vec2(-m_config.BezierX, 0), end).draw(2, Palette::White);
+		}
+
 		//ノードの更新
 		void updateNodes()
 		{
-			std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [this](auto& node)
+			bool selectAppend = KeyShift.pressed() || KeyControl.pressed();
+			std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [&](std::shared_ptr<Node>& node)
 				{
 					node->update(m_config, m_input);
+					if (node->clicked())
+					{
+						if (!selectAppend)
+						{
+							deselectAll();
+						}
+						node->Selecting = !node->Selecting;
+					}
 				});
 		}
 
@@ -582,7 +623,101 @@ namespace NodeEditor
 			}
 		}
 
-		void addNode(std::shared_ptr<INode> node, const Vec2& pos = Vec2(0, 0))
+		//範囲選択の更新
+		void updateRangeSelection()
+		{
+			m_rangeSelectionIsGroup = KeyControl.pressed();
+			if (!m_input.getProc() && MouseL.down())
+			{
+				deselectAll();
+				m_rangeSelection = true;
+				m_rangeSelectionBegin = Cursor::PosF();
+			}
+
+			if (m_rangeSelection)
+			{
+				if (MouseL.pressed())
+				{
+					auto cursor = Cursor::PosF();
+					m_rangeSelectionRange = RectF(
+						Min(cursor.x, m_rangeSelectionBegin.x),
+						Min(cursor.y, m_rangeSelectionBegin.y),
+						Abs(cursor.x - m_rangeSelectionBegin.x),
+						Abs(cursor.y - m_rangeSelectionBegin.y)
+					);
+					for (auto& node : m_nodelist)
+					{
+						node->Selecting = m_rangeSelectionRange.contains(node->getRect());
+					}
+				}
+				else
+				{
+					m_rangeSelection = false;
+					if (m_rangeSelectionIsGroup)
+					{
+						auto group = std::make_shared<Group>();
+						group->Rect = m_rangeSelectionRange;
+						group->Name = U"Group";
+						m_grouplist << group;
+					}
+				}
+			}
+		}
+
+		//範囲選択の描画
+		void drawRangeSelection()
+		{
+			if (m_rangeSelection)
+			{
+				if (m_rangeSelectionIsGroup)
+				{
+					Group group;
+					group.Rect = m_rangeSelectionRange;
+					group.draw(m_config);
+				}
+				else
+				{
+					m_rangeSelectionRange.draw(ColorF(0.4)).drawFrame(2, ColorF(0.44));
+				}
+			}
+		}
+
+		//グループの更新
+		void updateGroups()
+		{
+			std::for_each(std::rbegin(m_grouplist), std::rend(m_grouplist), [&](std::shared_ptr<Group>& group)
+				{
+					group->update(m_config, m_input, m_nodelist);
+				});
+		}
+
+		//グループの描画
+		void drawGroups()
+		{
+			for (auto& group : m_grouplist)
+			{
+				group->draw(m_config);
+			}
+		}
+
+		//キー入力の更新
+		void updateKeyInput()
+		{
+			if (KeyDelete.down())
+			{
+				m_nodelist.remove_if([this](std::shared_ptr<Node> node)
+					{
+						bool result = node->canDelete() && node->Selecting;
+						if (result)
+						{
+							node->disconnectAllSockets();
+						}
+						return result;
+					});
+			}
+		}
+
+		void addNode(std::shared_ptr<Node> node, const Vec2& pos = Vec2(0, 0))
 		{
 			m_nodelist << node;
 			node->ID = m_nextId++;
@@ -603,11 +738,12 @@ namespace NodeEditor
 		}
 
 		/// <summary>
-		/// 描画,更新処理
+		/// 更新処理
 		/// </summary>
-		/// <param name="drawArea">エディタを表示する範囲</param>
-		void draw(const Vec2 location)
+		/// <param name="location">エディタを表示する位置</param>
+		void update(const Vec2 location)
 		{
+			m_updateFrameCnt = Scene::FrameCount();
 			m_input.start();
 			if (!RectF(location, m_texture.size()).mouseOver())
 			{
@@ -616,13 +752,11 @@ namespace NodeEditor
 			{
 				const ScopedRenderTarget2D renderTarget(m_texture);
 				const ScopedViewport2D viewport(0, 0, m_texture.size());
+				const Transformer2D transformCamera(Mat3x2::Identity(), Mat3x2::Identity(), Transformer2D::Target::SetCamera);
 				const Transformer2D transformMouse(Mat3x2::Identity(), Mat3x2::Translate(location));//マウス位置補正
 
 				m_camera.setDefaultTransform();
 
-				Rect(0, 0, m_texture.size()).draw(ColorF(0.3));
-
-				try
 				{
 					const Transformer2D transformCam(m_camera.getMat3x2(), true);
 
@@ -630,23 +764,66 @@ namespace NodeEditor
 					if (node)
 					{
 						addNode(node, m_nodelistWindow.m_location);
+						if (m_grabFrom)
+						{
+							for (auto socket : node->getSockets())
+							{
+								if (m_grabFrom->canConnect(*socket))
+								{
+									ISocket::connect(m_grabFrom, socket);
+								}
+							}
+							m_grabFrom = nullptr;
+						}
 					}
 
 					updateNodes();
 
 					updateCables();
 
-					m_camera.update(m_input);
+					updateGroups();
+
+					updateRangeSelection();
+
+					m_camera.update(m_input, m_texture.size());
+
+					updateKeyInput();
+				}
+			}
+		}
+
+		/// <summary>
+		/// 描画(更新)処理
+		/// </summary>
+		/// <param name="location">エディタを表示する位置</param>
+		void draw(const Vec2 location)
+		{
+			//更新処理をする前に呼び出された場合、更新処理をする
+			if (m_updateFrameCnt != Scene::FrameCount())
+			{
+				update(location);
+			}
+
+			{
+				const ScopedRenderTarget2D renderTarget(m_texture);
+				const ScopedViewport2D viewport(0, 0, m_texture.size());
+				const Transformer2D transformCamera(Mat3x2::Identity(), Mat3x2::Identity(), Transformer2D::Target::SetCamera);
+				const Transformer2D transformMouse(Mat3x2::Identity(), Mat3x2::Translate(location));//マウス位置補正
+
+				Rect(0, 0, m_texture.size()).draw(ColorF(0.3));
+
+				{
+					const Transformer2D transformCam(m_camera.getMat3x2(), true);
+
+					drawGroups();
+
+					drawRangeSelection();
 
 					drawCables();
 
 					drawNodes();
 
 					m_nodelistWindow.draw(m_config);
-				}
-				catch (Error& ex)
-				{
-					m_config.font(ex.what()).drawAt(m_texture.size() / 2, Palette::Black);
 				}
 			}
 			m_texture.draw(location);
@@ -678,9 +855,9 @@ namespace NodeEditor
 			}
 		}
 
-		Optional<std::shared_ptr<INode>> addNode(const String& name, const Vec2& pos = Vec2(0, 0))
+		Optional<std::shared_ptr<Node>> addNode(const String& name, const Vec2& pos = Vec2(0, 0))
 		{
-			auto inode = m_inodeGenerator.getINode(name);
+			auto inode = m_inodeGenerator.getNode(name);
 			if (inode)
 			{
 				m_nodelist << *inode;
@@ -690,9 +867,9 @@ namespace NodeEditor
 			return inode;
 		}
 
-		Optional<std::shared_ptr<INode>> addNode(const Type& type, const Vec2& pos = Vec2(0, 0))
+		Optional<std::shared_ptr<Node>> addNode(const Type& type, const Vec2& pos = Vec2(0, 0))
 		{
-			auto inode = m_inodeGenerator.getINode(type);
+			auto inode = m_inodeGenerator.getNode(type);
 			if (inode)
 			{
 				m_nodelist << *inode;
@@ -702,7 +879,7 @@ namespace NodeEditor
 			return inode;
 		}
 
-		Optional<std::shared_ptr<INode>> searchNode(size_t id)
+		Optional<std::shared_ptr<Node>> searchNode(size_t id)
 		{
 			for (auto& node : m_nodelist)
 			{
@@ -714,7 +891,7 @@ namespace NodeEditor
 			return none;
 		}
 
-		Optional<std::shared_ptr<INode>> searchNode(const String& className)
+		Optional<std::shared_ptr<Node>> searchNode(const String& className)
 		{
 			for (auto& node : m_nodelist)
 			{
@@ -724,6 +901,18 @@ namespace NodeEditor
 				}
 			}
 			return none;
+		}
+
+		void clear()
+		{
+			m_nextId = 1;
+			m_nodelist.clear();
+			m_grouplist.clear();
+			m_grabFrom = nullptr;
+			m_isGrab = false;
+			m_camera.setScale(1.0);
+			m_camera.setCenter({ 0,0 });
+			m_candidateSocket = nullptr;
 		}
 
 		String save()
@@ -746,6 +935,8 @@ namespace NodeEditor
 
 		void load(const JSONReader& json)
 		{
+			clear();
+
 			auto nodes = json[U"nodes"].arrayView();
 			auto nodesCount = json[U"nodes"].arrayCount();
 
@@ -754,7 +945,7 @@ namespace NodeEditor
 			for (size_t i = 0; i < nodesCount; i++)
 			{
 				auto className = nodes[i][U"class"].getString();
-				auto inode = m_inodeGenerator.getINode(className);
+				auto inode = m_inodeGenerator.getNode(className);
 				if (inode)
 				{
 					auto node = (*inode);

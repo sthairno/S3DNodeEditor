@@ -12,7 +12,7 @@ namespace NodeEditor
 
 namespace NodeEditor
 {
-	class INode : public ISerializable
+	class Node : public ISerializable
 	{
 	private:
 
@@ -48,6 +48,8 @@ namespace NodeEditor
 
 		Optional<String> m_errorMsg;
 
+		bool m_clicked = false;
+
 		void calcSize(const Config& cfg);
 
 		void calcRect(const Config& cfg);
@@ -61,6 +63,8 @@ namespace NodeEditor
 		SizeF ChildSize = SizeF(0, 0);
 
 		size_t NextExecIdx = 0;
+
+		bool CanDelete = true;
 
 		virtual void childRun() {};
 
@@ -109,7 +113,9 @@ namespace NodeEditor
 		//Serialize
 		size_t ID = 0;
 
-		INode()
+		bool Selecting = false;
+
+		Node()
 		{
 
 		}
@@ -119,6 +125,11 @@ namespace NodeEditor
 		void update(const Config& cfg, Input& input);
 
 		void draw(const Config& cfg);
+
+		bool canDelete() const
+		{
+			return CanDelete;
+		}
 
 		template<class T>
 		void setInput(const size_t idx, const T& input)
@@ -151,7 +162,12 @@ namespace NodeEditor
 			return RectF(Location, m_size);
 		}
 
-		~INode();
+		bool clicked() const
+		{
+			return m_clicked;
+		}
+
+		~Node();
 
 		//ソケット取得
 
@@ -244,13 +260,15 @@ namespace NodeEditor
 			return result;
 		}
 
+		void disconnectAllSockets();
+
 		//Jsonシリアライズ/デシリアライズ
 
 		void serialize(JSONWriter&) const override;
 
 		void deserialize(const JSONValue&) override;
 
-		void deserializeSockets(const JSONValue&, Array<std::shared_ptr<INode>>&);
+		void deserializeSockets(const JSONValue&, Array<std::shared_ptr<Node>>&);
 	};
 
 	namespace detail
@@ -260,7 +278,7 @@ namespace NodeEditor
 
 		//戻り値ありの関数
 		template<class Result, class... Args>
-		class FunctionNode<Result(Args...)> : public NodeEditor::INode
+		class FunctionNode<Result(Args...)> : public NodeEditor::Node
 		{
 		private:
 
@@ -295,7 +313,7 @@ namespace NodeEditor
 
 		//戻り値なしの関数
 		template<class... Args>
-		class FunctionNode<void(Args...)> : public NodeEditor::INode
+		class FunctionNode<void(Args...)> : public NodeEditor::Node
 		{
 		private:
 

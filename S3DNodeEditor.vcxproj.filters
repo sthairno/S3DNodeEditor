@@ -114,10 +114,13 @@
     <ClCompile Include="Config.cpp">
       <Filter>Source Files\NodeEditor</Filter>
     </ClCompile>
-    <ClCompile Include="INode.cpp">
+    <ClCompile Include="Node.cpp">
       <Filter>Source Files\NodeEditor</Filter>
     </ClCompile>
     <ClCompile Include="NodeSocket.cpp">
+      <Filter>Source Files\NodeEditor</Filter>
+    </ClCompile>
+    <ClCompile Include="Group.cpp">
       <Filter>Source Files\NodeEditor</Filter>
     </ClCompile>
   </ItemGroup>
@@ -406,7 +409,7 @@
     <ClInclude Include="Input.hpp">
       <Filter>Header Files\NodeEditor</Filter>
     </ClInclude>
-    <ClInclude Include="INode.hpp">
+    <ClInclude Include="Node.hpp">
       <Filter>Header Files\NodeEditor</Filter>
     </ClInclude>
     <ClInclude Include="Config.hpp">
@@ -414,6 +417,9 @@
     </ClInclude>
     <ClInclude Include="3rdparty\nameof.hpp">
       <Filter>Header Files\3rdparty</Filter>
+    </ClInclude>
+    <ClInclude Include="Group.hpp">
+      <Filter>Header Files\NodeEditor</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
