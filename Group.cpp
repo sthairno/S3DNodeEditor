@@ -13,7 +13,7 @@ void NodeEditor::Group::layout(const Config& cfg)
 	m_titleFontRect.w -= 5 * 2;
 }
 
-void NodeEditor::Group::update(const Config& cfg, Input& input, Array<std::shared_ptr<INode>>& nodelist)
+void NodeEditor::Group::update(const Config& cfg, Input& input, Array<std::shared_ptr<Node>>& nodelist)
 {
 	layout(cfg);
 

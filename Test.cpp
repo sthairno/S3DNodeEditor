@@ -3,7 +3,7 @@
 #include"NodeEditor.hpp"
 #include"HamFramework.hpp"
 
-class UpdateFrameNode : public NodeEditor::INode
+class UpdateFrameNode : public NodeEditor::Node
 {
 public:
 
@@ -17,7 +17,7 @@ public:
 	}
 };
 
-class BranchNode : public NodeEditor::INode
+class BranchNode : public NodeEditor::Node
 {
 private:
 
@@ -47,7 +47,7 @@ public:
 
 namespace Value
 {
-	class IntegerNode : public NodeEditor::INode
+	class IntegerNode : public NodeEditor::Node
 	{
 	private:
 
@@ -139,7 +139,7 @@ namespace Value
 
 namespace Input
 {
-	class KeyUpNode : public NodeEditor::INode
+	class KeyUpNode : public NodeEditor::Node
 	{
 	private:
 		void childRun() override
@@ -165,7 +165,7 @@ namespace Input
 		}
 	};
 
-	class KeyDownNode : public NodeEditor::INode
+	class KeyDownNode : public NodeEditor::Node
 	{
 	private:
 		void childRun() override
@@ -191,7 +191,7 @@ namespace Input
 		}
 	};
 
-	class KeyLeftNode : public NodeEditor::INode
+	class KeyLeftNode : public NodeEditor::Node
 	{
 	private:
 		void childRun() override
@@ -217,7 +217,7 @@ namespace Input
 		}
 	};
 
-	class KeyRightNode : public NodeEditor::INode
+	class KeyRightNode : public NodeEditor::Node
 	{
 	private:
 		void childRun() override

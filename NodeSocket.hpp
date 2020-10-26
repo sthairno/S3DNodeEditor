@@ -4,7 +4,7 @@
 
 namespace NodeEditor
 {
-	class INode;
+	class Node;
 
 	class ISocket : public ISerializable
 	{
@@ -20,7 +20,7 @@ namespace NodeEditor
 
 	public:
 
-		INode& Node;
+		Node& Parent;
 
 		const String Name;
 
@@ -30,8 +30,8 @@ namespace NodeEditor
 
 		Array<std::shared_ptr<ISocket>> ConnectedSocket;
 
-		ISocket(INode& node, const String& desc, const IOType& socketType, const size_t index)
-			:Node(node),
+		ISocket(Node& node, const String& desc, const IOType& socketType, const size_t index)
+			:Parent(node),
 			Name(desc),
 			SocketType(socketType),
 			Index(index)
@@ -66,7 +66,7 @@ namespace NodeEditor
 
 		const Type ValueType;
 
-		ValueSocket(INode& node, const String& desc, const IOType& socketType, const size_t index, const Type valType)
+		ValueSocket(Node& node, const String& desc, const IOType& socketType, const size_t index, const Type valType)
 			:ISocket(node, desc, socketType, index),
 			ValueType(valType)
 		{
@@ -90,7 +90,7 @@ namespace NodeEditor
 		bool canConnectSameType(const ISocket& to) override;
 
 	public:
-		ExecSocket(INode& node, const String& desc, const IOType& socketType, const size_t index)
+		ExecSocket(Node& node, const String& desc, const IOType& socketType, const size_t index)
 			:ISocket(node, desc, socketType, index)
 		{
 			singleConnect = false;

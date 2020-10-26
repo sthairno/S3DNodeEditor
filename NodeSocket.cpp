@@ -1,4 +1,4 @@
-#include"INode.hpp"
+#include"Node.hpp"
 #include"NodeSocket.hpp"
 #include"3rdparty/nameof.hpp"
 
@@ -66,7 +66,7 @@ void NodeEditor::ISocket::serialize(JSONWriter& writer) const
 		{
 			writer.startObject();
 			{
-				writer.key(U"nodeID").write(socket->Node.ID);
+				writer.key(U"nodeID").write(socket->Parent.ID);
 				writer.key(U"socketIndex").write(socket->Index);
 			}
 			writer.endObject();
@@ -101,9 +101,9 @@ Vec2 NodeEditor::ValueSocket::calcPos(const Config& cfg)
 	switch (SocketType)
 	{
 	case IOType::Input:
-		return Node.getRect().tl() + Vec2(-cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + Node.getPrevNodeSockets().size() + 0.5f));
+		return Parent.getRect().tl() + Vec2(-cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + Parent.getPrevNodeSockets().size() + 0.5f));
 	case IOType::Output:
-		return Node.getRect().tr() + Vec2(cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + Node.getNextNodeSockets().size() + 0.5f));
+		return Parent.getRect().tr() + Vec2(cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + Parent.getNextNodeSockets().size() + 0.5f));
 	}
 	return Vec2(0, 0);
 }
@@ -118,9 +118,9 @@ Vec2 NodeEditor::ExecSocket::calcPos(const Config& cfg)
 	switch (SocketType)
 	{
 	case IOType::Input:
-		return Node.getRect().tl() + Vec2(-cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + 0.5f));
+		return Parent.getRect().tl() + Vec2(-cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + 0.5f));
 	case IOType::Output:
-		return Node.getRect().tr() + Vec2(cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + 0.5f));
+		return Parent.getRect().tr() + Vec2(cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + 0.5f));
 	}
 	return Vec2(0, 0);
 }

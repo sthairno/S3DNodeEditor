@@ -1,5 +1,5 @@
 #pragma once
-#include"INode.hpp"
+#include"Node.hpp"
 #include"Input.hpp"
 #include<Siv3D.hpp>
 
@@ -17,7 +17,7 @@ namespace NodeEditor
 
 		RectF m_titleFontRect;
 
-		Array<std::shared_ptr<INode>> m_grabTarget;
+		Array<std::shared_ptr<Node>> m_grabTarget;
 
 		void layout(const Config& cfg);
 
@@ -27,7 +27,7 @@ namespace NodeEditor
 
 		String Name;
 
-		void update(const Config& cfg, Input& input, Array<std::shared_ptr<INode>>& nodelist);
+		void update(const Config& cfg, Input& input, Array<std::shared_ptr<Node>>& nodelist);
 
 		void draw(const Config& cfg);
 	};

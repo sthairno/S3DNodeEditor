@@ -1,4 +1,4 @@
-#include "INode.hpp"
+#include "Node.hpp"
 
 Triangle EquilateralTriangle(const Vec2& center, const double& r, const double& theta)
 {
@@ -6,7 +6,7 @@ Triangle EquilateralTriangle(const Vec2& center, const double& r, const double& 
 		.setCentroid(center);
 }
 
-void NodeEditor::INode::calcSize(const Config& cfg)
+void NodeEditor::Node::calcSize(const Config& cfg)
 {
 	m_size.y = Max(m_inputSockets.size() + m_prevNodeSockets.size(), m_outputSockets.size() + m_nextNodeSockets.size()) * cfg.font.height() + cfg.TitleHeight + cfg.RectR + ChildSize.y;
 	float inWidthMax = 0, outWidthMax = 0;
@@ -47,7 +47,7 @@ void NodeEditor::INode::calcSize(const Config& cfg)
 	m_size.x = Max<float>({ cfg.WidthMin, inWidthMax + cfg.IOMargin + outWidthMax, (float)ChildSize.x });
 }
 
-void NodeEditor::INode::calcRect(const Config& cfg)
+void NodeEditor::Node::calcRect(const Config& cfg)
 {
 	m_rect = RectF(Location, m_size);
 	{
@@ -60,7 +60,7 @@ void NodeEditor::INode::calcRect(const Config& cfg)
 	}
 }
 
-void NodeEditor::INode::drawBackground(const Config& cfg)
+void NodeEditor::Node::drawBackground(const Config& cfg)
 {
 	double s = 0;
 
@@ -83,13 +83,13 @@ void NodeEditor::INode::drawBackground(const Config& cfg)
 	cfg.font(Name).drawAt(m_titleRect.center(), Palette::Black);
 }
 
-void NodeEditor::INode::setBackCol(const double hue)
+void NodeEditor::Node::setBackCol(const double hue)
 {
 	m_backColStw.restart();
 	m_backHue = hue;
 }
 
-void NodeEditor::INode::cfgInputSockets(Array<std::pair<Type, String>> cfg)
+void NodeEditor::Node::cfgInputSockets(Array<std::pair<Type, String>> cfg)
 {
 	m_inputSockets = Array<std::shared_ptr<ValueSocket>>(cfg.size());
 	for (size_t i = 0; i < cfg.size(); i++)
@@ -98,7 +98,7 @@ void NodeEditor::INode::cfgInputSockets(Array<std::pair<Type, String>> cfg)
 	}
 }
 
-void NodeEditor::INode::cfgOutputSockets(Array<std::pair<Type, String>> cfg)
+void NodeEditor::Node::cfgOutputSockets(Array<std::pair<Type, String>> cfg)
 {
 	m_outputSockets = Array<std::shared_ptr<ValueSocket>>(cfg.size());
 	for (size_t i = 0; i < cfg.size(); i++)
@@ -107,7 +107,7 @@ void NodeEditor::INode::cfgOutputSockets(Array<std::pair<Type, String>> cfg)
 	}
 }
 
-void NodeEditor::INode::cfgPrevExecSocket(const Array<String>& names)
+void NodeEditor::Node::cfgPrevExecSocket(const Array<String>& names)
 {
 	m_prevNodeSockets = Array<std::shared_ptr<ExecSocket>>(names.size());
 	for (size_t i = 0; i < names.size(); i++)
@@ -116,7 +116,7 @@ void NodeEditor::INode::cfgPrevExecSocket(const Array<String>& names)
 	}
 }
 
-void NodeEditor::INode::cfgNextExecSocket(const Array<String>& names)
+void NodeEditor::Node::cfgNextExecSocket(const Array<String>& names)
 {
 	m_nextNodeSockets = Array<std::shared_ptr<ExecSocket>>(names.size());
 	for (size_t i = 0; i < names.size(); i++)
@@ -125,7 +125,7 @@ void NodeEditor::INode::cfgNextExecSocket(const Array<String>& names)
 	}
 }
 
-void NodeEditor::INode::run()
+void NodeEditor::Node::run()
 {
 	m_errorMsg.reset();
 	try
@@ -136,7 +136,7 @@ void NodeEditor::INode::run()
 			{
 				throw Error(U"ノード名:\"{}\", \"入力ソケット:\"{}\"のノードが指定されていません"_fmt(Name, inSocket->Name));
 			}
-			inSocket->ConnectedSocket[0]->Node.run();
+			inSocket->ConnectedSocket[0]->Parent.run();
 			inSocket->setValue(dynamic_pointer_cast<ValueSocket>(inSocket->ConnectedSocket[0])->value());
 		}
 
@@ -156,7 +156,7 @@ void NodeEditor::INode::run()
 		{
 			for (auto& nextSocket : m_nextNodeSockets[NextExecIdx]->ConnectedSocket)
 			{
-				nextSocket->Node.run();
+				nextSocket->Parent.run();
 			}
 		}
 	}
@@ -167,7 +167,7 @@ void NodeEditor::INode::run()
 	}
 }
 
-void NodeEditor::INode::update(const Config& cfg, Input& input)
+void NodeEditor::Node::update(const Config& cfg, Input& input)
 {
 	calcSize(cfg);
 
@@ -204,7 +204,7 @@ void NodeEditor::INode::update(const Config& cfg, Input& input)
 	m_clicked = !m_isGrab && input.leftClicked(m_rect);
 }
 
-void NodeEditor::INode::draw(const Config& cfg)
+void NodeEditor::Node::draw(const Config& cfg)
 {
 	drawBackground(cfg);
 
@@ -318,12 +318,12 @@ void NodeEditor::INode::draw(const Config& cfg)
 	}
 }
 
-NodeEditor::INode::~INode()
+NodeEditor::Node::~Node()
 {
 	disconnectAllSockets();
 }
 
-void NodeEditor::INode::disconnectAllSockets()
+void NodeEditor::Node::disconnectAllSockets()
 {
 	for (auto& socket : m_inputSockets)
 	{
@@ -343,7 +343,7 @@ void NodeEditor::INode::disconnectAllSockets()
 	}
 }
 
-void NodeEditor::INode::serialize(JSONWriter& writer) const
+void NodeEditor::Node::serialize(JSONWriter& writer) const
 {
 	writer.startObject();
 	{
@@ -395,7 +395,7 @@ void NodeEditor::INode::serialize(JSONWriter& writer) const
 	writer.endObject();
 }
 
-void NodeEditor::INode::deserialize(const JSONValue& json)
+void NodeEditor::Node::deserialize(const JSONValue& json)
 {
 	ID = json[U"id"].get<decltype(ID)>();
 
@@ -404,7 +404,7 @@ void NodeEditor::INode::deserialize(const JSONValue& json)
 	childDeserialize(json[U"child"]);
 }
 
-void NodeEditor::INode::deserializeSockets(const JSONValue& json, Array<std::shared_ptr<INode>>& nodes)
+void NodeEditor::Node::deserializeSockets(const JSONValue& json, Array<std::shared_ptr<Node>>& nodes)
 {
 	for (const auto& socketJson : json[U"inputSockets"].arrayView())
 	{

@@ -12,7 +12,7 @@ namespace NodeEditor
 
 namespace NodeEditor
 {
-	class INode : public ISerializable
+	class Node : public ISerializable
 	{
 	private:
 
@@ -115,7 +115,7 @@ namespace NodeEditor
 
 		bool Selecting = false;
 
-		INode()
+		Node()
 		{
 
 		}
@@ -167,7 +167,7 @@ namespace NodeEditor
 			return m_clicked;
 		}
 
-		~INode();
+		~Node();
 
 		//ソケット取得
 
@@ -268,7 +268,7 @@ namespace NodeEditor
 
 		void deserialize(const JSONValue&) override;
 
-		void deserializeSockets(const JSONValue&, Array<std::shared_ptr<INode>>&);
+		void deserializeSockets(const JSONValue&, Array<std::shared_ptr<Node>>&);
 	};
 
 	namespace detail
@@ -278,7 +278,7 @@ namespace NodeEditor
 
 		//戻り値ありの関数
 		template<class Result, class... Args>
-		class FunctionNode<Result(Args...)> : public NodeEditor::INode
+		class FunctionNode<Result(Args...)> : public NodeEditor::Node
 		{
 		private:
 
@@ -313,7 +313,7 @@ namespace NodeEditor
 
 		//戻り値なしの関数
 		template<class... Args>
-		class FunctionNode<void(Args...)> : public NodeEditor::INode
+		class FunctionNode<void(Args...)> : public NodeEditor::Node
 		{
 		private:
 

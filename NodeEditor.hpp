@@ -3,7 +3,7 @@
 #include<regex>
 #include"Input.hpp"
 #include"Config.hpp"
-#include"INode.hpp"
+#include"Node.hpp"
 #include"NodeSocket.hpp"
 #include"Group.hpp"
 
@@ -24,11 +24,11 @@ namespace NodeEditor
 			return result;
 		}
 
-		class INodeGenerator
+		class NodeGenerator
 		{
 		private:
 
-			using GeneratorType = std::function<std::shared_ptr<INode>(void)>;
+			using GeneratorType = std::function<std::shared_ptr<Node>(void)>;
 
 			std::regex prefixRegex = std::regex("^(?:class |struct )?(.*)$");
 
@@ -65,7 +65,7 @@ namespace NodeEditor
 
 		public:
 
-			struct INodeClass
+			struct NodeClass
 			{
 				bool isFunction;
 				bool visible;
@@ -74,7 +74,7 @@ namespace NodeEditor
 
 			struct Group
 			{
-				std::unordered_map<String, INodeClass> classes;
+				std::unordered_map<String, NodeClass> classes;
 				std::unordered_map<String, Group> namespaces;
 				String ToString(const String& prefix = U"")
 				{
@@ -105,7 +105,7 @@ namespace NodeEditor
 				{
 					targetNamespace = targetNamespace.get().namespaces[names[i]];
 				}
-				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ false,visible,createGenerator<SubType>(names.join(U"::",U"",U"")) });
+				targetNamespace.get().classes.emplace(names[names.size() - 1], NodeClass{ false,visible,createGenerator<SubType>(names.join(U"::",U"",U"")) });
 			}
 
 			template<class FuncType>
@@ -118,20 +118,20 @@ namespace NodeEditor
 				{
 					targetNamespace = targetNamespace.get().namespaces[names[i]];
 				}
-				targetNamespace.get().classes.emplace(names[names.size() - 1], INodeClass{ true,true,createFuncGenerator<FuncType>(names.join(U"::",U"",U""),names[names.size() - 1],argNames,function) });
+				targetNamespace.get().classes.emplace(names[names.size() - 1], NodeClass{ true,true,createFuncGenerator<FuncType>(names.join(U"::",U"",U""),names[names.size() - 1],argNames,function) });
 			}
 
-			Optional<std::shared_ptr<INode>> getINode(const Type& type)
+			Optional<std::shared_ptr<Node>> getNode(const Type& type)
 			{
-				return getINode(parseNames(type.name()));
+				return getNode(parseNames(type.name()));
 			}
 
-			Optional<std::shared_ptr<INode>> getINode(const String& names)
+			Optional<std::shared_ptr<Node>> getNode(const String& names)
 			{
-				return getINode(parseNames(names));
+				return getNode(parseNames(names));
 			}
 
-			Optional<std::shared_ptr<INode>> getINode(const Array<String>& names)
+			Optional<std::shared_ptr<Node>> getNode(const Array<String>& names)
 			{
 				auto targetNamespace = std::ref(global);
 				for (size_t i = 0; i < names.size() - 1; i++)
@@ -159,7 +159,7 @@ namespace NodeEditor
 
 			bool m_visible = false;
 
-			const INodeGenerator& m_generator;
+			const NodeGenerator& m_generator;
 
 			const Texture m_nsTexture = Texture(U"icons/namespace.png");
 
@@ -169,13 +169,13 @@ namespace NodeEditor
 
 			const Texture m_anglerightTexture = Texture(Icon(0xf105, 16));
 
-			std::pair<String, INodeGenerator::Group> m_currentNs;
+			std::pair<String, NodeGenerator::Group> m_currentNs;
 
 		public:
 
 			Vec2 m_location;
 
-			NodeListWindow(const INodeGenerator& generator)
+			NodeListWindow(const NodeGenerator& generator)
 				:m_generator(generator)
 			{
 
@@ -193,9 +193,9 @@ namespace NodeEditor
 				m_visible = false;
 			}
 
-			std::shared_ptr<INode> update(const Config& cfg, Input& input)
+			std::shared_ptr<Node> update(const Config& cfg, Input& input)
 			{
-				std::shared_ptr<INode> result;
+				std::shared_ptr<Node> result;
 
 				if (m_visible)
 				{
@@ -450,7 +450,7 @@ namespace NodeEditor
 
 		int32 m_updateFrameCnt = -1;
 
-		Array<std::shared_ptr<INode>> m_nodelist;
+		Array<std::shared_ptr<Node>> m_nodelist;
 
 		Array<std::shared_ptr<Group>> m_grouplist;
 
@@ -474,7 +474,7 @@ namespace NodeEditor
 
 		Input m_input;
 
-		detail::INodeGenerator m_inodeGenerator;
+		detail::NodeGenerator m_inodeGenerator;
 
 		detail::NodeListWindow m_nodelistWindow;
 
@@ -600,7 +600,7 @@ namespace NodeEditor
 		void updateNodes()
 		{
 			bool selectAppend = KeyShift.pressed() || KeyControl.pressed();
-			std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [&](std::shared_ptr<INode>& node)
+			std::for_each(std::rbegin(m_nodelist), std::rend(m_nodelist), [&](std::shared_ptr<Node>& node)
 				{
 					node->update(m_config, m_input);
 					if (node->clicked())
@@ -705,7 +705,7 @@ namespace NodeEditor
 		{
 			if (KeyDelete.down())
 			{
-				m_nodelist.remove_if([this](std::shared_ptr<INode> node)
+				m_nodelist.remove_if([this](std::shared_ptr<Node> node)
 					{
 						bool result = node->canDelete() && node->Selecting;
 						if (result)
@@ -717,7 +717,7 @@ namespace NodeEditor
 			}
 		}
 
-		void addNode(std::shared_ptr<INode> node, const Vec2& pos = Vec2(0, 0))
+		void addNode(std::shared_ptr<Node> node, const Vec2& pos = Vec2(0, 0))
 		{
 			m_nodelist << node;
 			node->ID = m_nextId++;
@@ -855,9 +855,9 @@ namespace NodeEditor
 			}
 		}
 
-		Optional<std::shared_ptr<INode>> addNode(const String& name, const Vec2& pos = Vec2(0, 0))
+		Optional<std::shared_ptr<Node>> addNode(const String& name, const Vec2& pos = Vec2(0, 0))
 		{
-			auto inode = m_inodeGenerator.getINode(name);
+			auto inode = m_inodeGenerator.getNode(name);
 			if (inode)
 			{
 				m_nodelist << *inode;
@@ -867,9 +867,9 @@ namespace NodeEditor
 			return inode;
 		}
 
-		Optional<std::shared_ptr<INode>> addNode(const Type& type, const Vec2& pos = Vec2(0, 0))
+		Optional<std::shared_ptr<Node>> addNode(const Type& type, const Vec2& pos = Vec2(0, 0))
 		{
-			auto inode = m_inodeGenerator.getINode(type);
+			auto inode = m_inodeGenerator.getNode(type);
 			if (inode)
 			{
 				m_nodelist << *inode;
@@ -879,7 +879,7 @@ namespace NodeEditor
 			return inode;
 		}
 
-		Optional<std::shared_ptr<INode>> searchNode(size_t id)
+		Optional<std::shared_ptr<Node>> searchNode(size_t id)
 		{
 			for (auto& node : m_nodelist)
 			{
@@ -891,7 +891,7 @@ namespace NodeEditor
 			return none;
 		}
 
-		Optional<std::shared_ptr<INode>> searchNode(const String& className)
+		Optional<std::shared_ptr<Node>> searchNode(const String& className)
 		{
 			for (auto& node : m_nodelist)
 			{
@@ -945,7 +945,7 @@ namespace NodeEditor
 			for (size_t i = 0; i < nodesCount; i++)
 			{
 				auto className = nodes[i][U"class"].getString();
-				auto inode = m_inodeGenerator.getINode(className);
+				auto inode = m_inodeGenerator.getNode(className);
 				if (inode)
 				{
 					auto node = (*inode);
