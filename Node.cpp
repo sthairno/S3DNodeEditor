@@ -8,7 +8,7 @@ Triangle EquilateralTriangle(const Vec2& center, const double& r, const double& 
 
 void NodeEditor::Node::calcSize(const Config& cfg)
 {
-	m_size.y = Max(m_inputSockets.size() + m_prevNodeSockets.size(), m_outputSockets.size() + m_nextNodeSockets.size()) * cfg.font.height() + cfg.TitleHeight + cfg.RectR + ChildSize.y;
+	m_size.y = Max(m_inputSockets.size() + m_prevNodeSockets.size(), m_outputSockets.size() + m_nextNodeSockets.size()) * cfg.font.height() + cfg.Node_TitleHeight + cfg.Node_RectR + ChildSize.y;
 	float inWidthMax = 0, outWidthMax = 0;
 	for (auto& prevSocket : m_prevNodeSockets)
 	{
@@ -44,15 +44,15 @@ void NodeEditor::Node::calcSize(const Config& cfg)
 			outWidthMax = width;
 		}
 	}
-	m_size.x = Max<float>({ cfg.WidthMin, inWidthMax + cfg.IOMargin + outWidthMax, (float)ChildSize.x });
+	m_size.x = Max<float>({ cfg.Node_WidthMin, inWidthMax + cfg.Node_IOMargin + outWidthMax, (float)ChildSize.x });
 }
 
 void NodeEditor::Node::calcRect(const Config& cfg)
 {
 	m_rect = RectF(Location, m_size);
 	{
-		m_titleRect = RectF(Location, m_size.x, cfg.TitleHeight);
-		m_contentRect = RectF(m_rect.x, m_rect.y + cfg.TitleHeight, m_rect.w, m_rect.h - cfg.TitleHeight - cfg.RectR);
+		m_titleRect = RectF(Location, m_size.x, cfg.Node_TitleHeight);
+		m_contentRect = RectF(m_rect.x, m_rect.y + cfg.Node_TitleHeight, m_rect.w, m_rect.h - cfg.Node_TitleHeight - cfg.Node_RectR);
 		{
 			m_socketRect = RectF(m_contentRect.pos, m_contentRect.w, Max(m_inputSockets.size() + m_prevNodeSockets.size(), m_outputSockets.size() + m_nextNodeSockets.size()) * cfg.font.height());
 			m_childRect = RectF(Arg::topCenter = m_socketRect.bottomCenter() + Vec2(0, 1), ChildSize);
@@ -64,7 +64,7 @@ void NodeEditor::Node::drawBackground(const Config& cfg)
 {
 	double s = 0;
 
-	const auto& roundRect = m_rect.rounded(cfg.RectR);
+	const auto& roundRect = m_rect.rounded(cfg.Node_RectR);
 
 	if (m_backColStw.elapsed() < 1s)
 	{
@@ -75,12 +75,12 @@ void NodeEditor::Node::drawBackground(const Config& cfg)
 	roundRect.draw(HSV(m_backHue, s, 0.7));
 	if (Selecting)
 	{
-		roundRect.drawFrame(0, 2, Palette::Orange);
+		roundRect.drawFrame(0, 2, cfg.Node_SelectedFrameCol);
 	}
-	m_contentRect.draw(ColorF(0.9));
+	m_contentRect.draw(cfg.Node_ContentBackCol);
 
 	//タイトルの描画
-	cfg.font(Name).drawAt(m_titleRect.center(), Palette::Black);
+	cfg.font(Name).drawAt(m_titleRect.center(), cfg.Node_TitleFontCol);
 }
 
 void NodeEditor::Node::setBackCol(const double hue)
@@ -229,7 +229,7 @@ void NodeEditor::Node::draw(const Config& cfg)
 		auto pos = prevSocket->calcPos(cfg);
 		auto triangle = EquilateralTriangle(pos, cfg.ConnectorSize / 2, 90_deg);
 
-		cfg.font(prevSocket->Name).draw(Arg::topLeft = fontBasePos, Palette::Black);
+		cfg.font(prevSocket->Name).draw(Arg::topLeft = fontBasePos, cfg.Node_ContentFontCol);
 		fontBasePos.y += cfg.font.height();
 
 		if (prevSocket->ConnectedSocket)
@@ -248,7 +248,7 @@ void NodeEditor::Node::draw(const Config& cfg)
 		const auto tex = cfg.getTypeIcon(inSocket->ValueType);
 		const Vec2 fontPos = fontBasePos + Vec2(0, cfg.font.height() * i) + Vec2(tex ? tex->width() : 0, 0);
 
-		auto fontlc = cfg.font(inSocket->Name).draw(Arg::topLeft = fontPos, Palette::Black).leftCenter();
+		auto fontlc = cfg.font(inSocket->Name).draw(Arg::topLeft = fontPos, cfg.Node_ContentFontCol).leftCenter();
 		if (tex)
 		{
 			tex->draw(Arg::rightCenter = fontlc);
@@ -273,7 +273,7 @@ void NodeEditor::Node::draw(const Config& cfg)
 		auto pos = nextSocket->calcPos(cfg);
 		auto triangle = EquilateralTriangle(pos, cfg.ConnectorSize / 2, 90_deg);
 
-		cfg.font(nextSocket->Name).draw(Arg::topRight = fontBasePos, Palette::Black);
+		cfg.font(nextSocket->Name).draw(Arg::topRight = fontBasePos, cfg.Node_ContentFontCol);
 		fontBasePos.y += cfg.font.height();
 
 		if (nextSocket->ConnectedSocket)
@@ -292,7 +292,7 @@ void NodeEditor::Node::draw(const Config& cfg)
 		const auto tex = cfg.getTypeIcon(outSocket->ValueType);
 		const Vec2 fontPos = fontBasePos + Vec2(0, cfg.font.height() * i) - Vec2(tex ? tex->width() : 0, 0);
 
-		cfg.font(outSocket->Name).draw(Arg::topRight = fontPos, Palette::Black);
+		cfg.font(outSocket->Name).draw(Arg::topRight = fontPos, cfg.Node_ContentFontCol);
 		if (tex)
 		{
 			tex->draw(Arg::leftCenter = Vec2(fontPos.x, fontPos.y + cfg.font.height() / 2));

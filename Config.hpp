@@ -13,13 +13,37 @@ namespace NodeEditor
 
 	struct Config
 	{
-		float WidthMin = 100;
+		ColorF Editor_BackCol = ColorF(0.3);
 
-		float IOMargin = 10;
+		float Node_WidthMin = 100;
 
-		float TitleHeight = 20;
+		float Node_IOMargin = 10;
 
-		float RectR = 5;
+		float Node_TitleHeight = 20;
+
+		float Node_RectR = 5;
+
+		ColorF Node_TitleFontCol = Palette::Black;
+
+		ColorF Node_ContentBackCol = ColorF(0.9);
+
+		ColorF Node_ContentFontCol = Palette::Black;
+
+		ColorF Node_SelectedFrameCol = Palette::Orange;
+
+		float Group_RectR = 6;
+
+		ColorF Group_BackCol = ColorF(0, 0.1);
+
+		ColorF Group_TitleCol = ColorF(0, 0.2);
+
+		ColorF Group_TitleFontCol = Palette::White;
+
+		ColorF Group_FrameCol = Palette::White;
+
+		ColorF RangeSelection_BackCol = ColorF(1, 0.1);
+
+		ColorF RangeSelection_FrameCol = ColorF(1, 0.2);
 
 		float ConnectorSize = 10;
 

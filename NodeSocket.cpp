@@ -101,9 +101,9 @@ Vec2 NodeEditor::ValueSocket::calcPos(const Config& cfg)
 	switch (SocketType)
 	{
 	case IOType::Input:
-		return Parent.getRect().tl() + Vec2(-cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + Parent.getPrevNodeSockets().size() + 0.5f));
+		return Parent.getRect().tl() + Vec2(-cfg.ConnectorSize / 2, cfg.Node_TitleHeight + cfg.font.height() * (Index + Parent.getPrevNodeSockets().size() + 0.5f));
 	case IOType::Output:
-		return Parent.getRect().tr() + Vec2(cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + Parent.getNextNodeSockets().size() + 0.5f));
+		return Parent.getRect().tr() + Vec2(cfg.ConnectorSize / 2, cfg.Node_TitleHeight + cfg.font.height() * (Index + Parent.getNextNodeSockets().size() + 0.5f));
 	}
 	return Vec2(0, 0);
 }
@@ -118,9 +118,9 @@ Vec2 NodeEditor::ExecSocket::calcPos(const Config& cfg)
 	switch (SocketType)
 	{
 	case IOType::Input:
-		return Parent.getRect().tl() + Vec2(-cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + 0.5f));
+		return Parent.getRect().tl() + Vec2(-cfg.ConnectorSize / 2, cfg.Node_TitleHeight + cfg.font.height() * (Index + 0.5f));
 	case IOType::Output:
-		return Parent.getRect().tr() + Vec2(cfg.ConnectorSize / 2, cfg.TitleHeight + cfg.font.height() * (Index + 0.5f));
+		return Parent.getRect().tr() + Vec2(cfg.ConnectorSize / 2, cfg.Node_TitleHeight + cfg.font.height() * (Index + 0.5f));
 	}
 	return Vec2(0, 0);
 }

@@ -9,8 +9,8 @@ void NodeEditor::Group::layout(const Config& cfg)
 	m_titleRect = RectF(m_outRect.pos, m_outRect.w, cfg.font.height());
 
 	m_titleFontRect = RectF(m_titleRect);
-	m_titleFontRect.x += 5;
-	m_titleFontRect.w -= 5 * 2;
+	m_titleFontRect.x += cfg.Group_RectR;
+	m_titleFontRect.w -= cfg.Group_RectR * 2;
 }
 
 void NodeEditor::Group::update(const Config& cfg, Input& input, Array<std::shared_ptr<Node>>& nodelist)
@@ -54,10 +54,11 @@ void NodeEditor::Group::draw(const Config& cfg)
 {
 	layout(cfg);
 
-	auto titleRoundRect = m_titleRect.rounded(5, 5, 0, 0);
-	auto outRoundRect = m_outRect.rounded(5);
-	outRoundRect.drawFrame();
-	titleRoundRect.drawFrame();
+	auto titleRoundRect = m_titleRect.rounded(cfg.Group_RectR, cfg.Group_RectR, 0, 0);
+	auto outRoundRect = m_outRect.rounded(cfg.Group_RectR);
+	outRoundRect.draw(cfg.Group_BackCol).drawFrame(0, 1, cfg.Group_FrameCol);
+	titleRoundRect.draw(cfg.Group_TitleCol);
+	RectF(m_titleRect.bl(), m_titleRect.w, 1).draw(cfg.Group_FrameCol);
 
-	cfg.font(Name).draw(m_titleFontRect, Palette::White);
+	cfg.font(Name).draw(m_titleFontRect, cfg.Group_TitleFontCol);
 }

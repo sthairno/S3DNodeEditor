@@ -681,7 +681,7 @@ namespace NodeEditor
 				}
 				else
 				{
-					m_rangeSelectionRange.draw(ColorF(0.4)).drawFrame(2, ColorF(0.44));
+					m_rangeSelectionRange.draw(m_config.RangeSelection_BackCol).drawFrame(2, m_config.RangeSelection_FrameCol);
 				}
 			}
 		}
@@ -815,7 +815,7 @@ namespace NodeEditor
 				const Transformer2D transformCamera(Mat3x2::Identity(), Mat3x2::Identity(), Transformer2D::Target::SetCamera);
 				const Transformer2D transformMouse(Mat3x2::Identity(), Mat3x2::Translate(location));//マウス位置補正
 
-				Rect(0, 0, m_texture.size()).draw(ColorF(0.3));
+				Rect(0, 0, m_texture.size()).draw(m_config.Editor_BackCol);
 
 				{
 					const Transformer2D transformCam(m_camera.getMat3x2(), true);
